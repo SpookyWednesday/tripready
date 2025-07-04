@@ -1,8 +1,8 @@
 // Travel Packer - Main Application Logic
-// API Configuration - ADD THIS TO THE TOP
-const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/api' : '/api';
+// API Configuration
+const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
-// Replace your existing mock functions with these real API calls
+// API Functions
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
         const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
@@ -19,7 +19,10 @@ async function getVisaData(nationality, destination) {
         return await response.json();
     } catch (error) {
         console.error('Visa API Error:', error);
-        return { visaStatus: 'unknown', visaMessage: 'Check with embassy' };
+        return {
+            visaStatus: 'unknown',
+            visaMessage: 'Check with embassy'
+        };
     }
 }
 
@@ -27,8 +30,16 @@ async function getRecommendations(destination, weather, tripType, duration, acti
     try {
         const response = await fetch(`${API_BASE}/recommendations`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ destination, weather, tripType, duration, activities })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                destination,
+                weather,
+                tripType,
+                duration,
+                activities
+            })
         });
         return await response.json();
     } catch (error) {
@@ -37,29 +48,22 @@ async function getRecommendations(destination, weather, tripType, duration, acti
     }
 }
 
-// Your existing code continues below...
-
 class TravelPackingApp {
     constructor() {
         this.currentTrip = null;
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
         this.isGenerating = false;
-        
+
         // Sample data for countries and destinations
         this.countries = [
-            "United States", "United Kingdom", "Canada", "Australia", "Germany", 
-            "France", "Japan", "South Korea", "China", "India", "Brazil", "Mexico", 
-            "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", 
-            "Switzerland", "Austria", "New Zealand", "Singapore", "Hong Kong", 
-            "South Africa", "UAE", "Saudi Arabia", "Russia", "Turkey", "Greece", "Portugal"
+            "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "South Korea", "China", "India", "Brazil", "Mexico", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", "Switzerland", "Austria", "New Zealand", "Singapore", "Hong Kong", "South Africa", "UAE", "Saudi Arabia", "Russia", "Turkey", "Greece", "Portugal"
         ];
-        
+
         this.sampleDestinations = [
-            "Paris, France", "Tokyo, Japan", "New York, USA", "London, UK", 
-            "Sydney, Australia", "Rome, Italy", "Barcelona, Spain", "Amsterdam, Netherlands"
+            "Paris, France", "Tokyo, Japan", "New York, USA", "London, UK", "Sydney, Australia", "Rome, Italy", "Barcelona, Spain", "Amsterdam, Netherlands"
         ];
-        
+
         this.packingCategories = {
             documents: {
                 name: "📄 Essential Documents",
@@ -125,10 +129,10 @@ class TravelPackingApp {
                 ]
             }
         };
-        
+
         this.init();
     }
-    
+
     init() {
         console.log('Initializing Travel Packing App...');
         this.loadSavedTheme();
@@ -139,13 +143,13 @@ class TravelPackingApp {
         this.loadSavedProgress();
         console.log('App initialized successfully');
     }
-    
+
     loadSavedTheme() {
         try {
             const savedTheme = localStorage.getItem('travel-app-theme') || 'theme-default';
             const themeSelector = document.getElementById('theme-selector');
             const body = document.body;
-            
+
             if (themeSelector && body) {
                 themeSelector.value = savedTheme;
                 body.className = savedTheme;
@@ -155,7 +159,7 @@ class TravelPackingApp {
             console.error('Error loading saved theme:', error);
         }
     }
-    
+
     setupEventListeners() {
         try {
             // Theme selector
@@ -165,7 +169,7 @@ class TravelPackingApp {
                     this.changeTheme(e.target.value);
                 });
             }
-            
+
             // Form submission
             const travelForm = document.getElementById('travel-form');
             if (travelForm) {
@@ -174,30 +178,30 @@ class TravelPackingApp {
                     this.generateChecklist();
                 });
             }
-            
+
             // Date validation
             const departureDate = document.getElementById('departure-date');
             const returnDate = document.getElementById('return-date');
-            
+
             if (departureDate) {
                 departureDate.addEventListener('change', () => this.validateDates());
             }
             if (returnDate) {
                 returnDate.addEventListener('change', () => this.validateDates());
             }
-            
+
             // Retry button
             const retryBtn = document.getElementById('retry-btn');
             if (retryBtn) {
                 retryBtn.addEventListener('click', () => this.retryGeneration());
             }
-            
+
             console.log('Event listeners set up successfully');
         } catch (error) {
             console.error('Error setting up event listeners:', error);
         }
     }
-    
+
     changeTheme(themeName) {
         try {
             const body = document.body;
@@ -211,7 +215,7 @@ class TravelPackingApp {
             console.error('Error changing theme:', error);
         }
     }
-    
+
     populateCountryDropdown() {
         try {
             const select = document.getElementById('nationality');
@@ -227,43 +231,35 @@ class TravelPackingApp {
             console.error('Error populating country dropdown:', error);
         }
     }
-    
+
     setupDestinationSuggestions() {
         try {
             const input = document.getElementById('destination');
             const suggestionsList = document.getElementById('destination-suggestions');
-            
+
             if (!input || !suggestionsList) return;
-            
+
             input.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase();
                 if (query.length < 2) {
                     suggestionsList.classList.remove('show');
                     return;
                 }
-                
+
                 const matches = this.sampleDestinations.filter(dest => 
                     dest.toLowerCase().includes(query)
                 );
-                
+
                 if (matches.length > 0) {
                     suggestionsList.innerHTML = matches.map(dest => 
-                        `<div class="suggestion-item" data-destination="${dest}">${dest}</div>`
+                        `<div class="suggestion-item" onclick="app.selectDestination('${dest}')">${dest}</div>`
                     ).join('');
                     suggestionsList.classList.add('show');
-                    
-                    // Add click listeners to suggestions
-                    suggestionsList.querySelectorAll('.suggestion-item').forEach(item => {
-                        item.addEventListener('click', () => {
-                            input.value = item.dataset.destination;
-                            suggestionsList.classList.remove('show');
-                        });
-                    });
                 } else {
                     suggestionsList.classList.remove('show');
                 }
             });
-            
+
             // Hide suggestions when clicking outside
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
@@ -274,931 +270,378 @@ class TravelPackingApp {
             console.error('Error setting up destination suggestions:', error);
         }
     }
-    
+
+    selectDestination(destination) {
+        const input = document.getElementById('destination');
+        const suggestionsList = document.getElementById('destination-suggestions');
+        
+        if (input) {
+            input.value = destination;
+        }
+        if (suggestionsList) {
+            suggestionsList.classList.remove('show');
+        }
+    }
+
     setMinDates() {
         try {
             const today = new Date().toISOString().split('T')[0];
             const departureDate = document.getElementById('departure-date');
             const returnDate = document.getElementById('return-date');
-            
-            if (departureDate) departureDate.min = today;
-            if (returnDate) returnDate.min = today;
+
+            if (departureDate) {
+                departureDate.min = today;
+            }
+            if (returnDate) {
+                returnDate.min = today;
+            }
         } catch (error) {
-            console.error('Error setting min dates:', error);
+            console.error('Error setting minimum dates:', error);
         }
     }
-    
+
     validateDates() {
         try {
             const departureDate = document.getElementById('departure-date');
             const returnDate = document.getElementById('return-date');
-            
-            if (!departureDate || !returnDate) return;
-            
-            const departureValue = departureDate.value;
-            const returnValue = returnDate.value;
-            
-            if (departureValue && returnValue) {
-                if (new Date(returnValue) <= new Date(departureValue)) {
-                    returnDate.value = '';
+
+            if (departureDate && returnDate && departureDate.value && returnDate.value) {
+                if (new Date(returnDate.value) <= new Date(departureDate.value)) {
+                    returnDate.setCustomValidity('Return date must be after departure date');
                     this.showToast('Return date must be after departure date', 'warning');
+                } else {
+                    returnDate.setCustomValidity('');
                 }
-            }
-            
-            if (departureValue) {
-                returnDate.min = departureValue;
             }
         } catch (error) {
             console.error('Error validating dates:', error);
         }
     }
-    
-    async generateChecklist() {
-        if (this.isGenerating) {
-            console.log('Already generating checklist, skipping...');
-            return;
+
+    loadSavedProgress() {
+        try {
+            const savedProgress = localStorage.getItem('travel-checklist-progress');
+            if (savedProgress) {
+                this.checklistProgress = JSON.parse(savedProgress);
+            }
+        } catch (error) {
+            console.error('Error loading saved progress:', error);
         }
-        
-        console.log('Starting checklist generation...');
-        this.isGenerating = true;
+    }
+
+    // THE KEY NEW METHOD - CONNECTS APIs TO UI
+    async generateChecklist() {
+        if (this.isGenerating) return;
         
         try {
-            const formData = this.getFormData();
-            console.log('Form data:', formData);
+            this.isGenerating = true;
             
-            if (!this.validateForm(formData)) {
-                this.isGenerating = false;
-                return;
-            }
-            
-            this.showLoadingState();
-            
-            // Start progress animation
-            const progressAnimation = this.animateProgress();
-            
-            // Generate data synchronously to avoid async issues
-            const weatherData = this.generateWeatherData(formData.destination);
-            const visaData = this.generateVisaData(formData.nationality, formData.destination);
-            const culturalData = this.generateCulturalData(formData.destination);
-            
-            console.log('Generated weather data:', weatherData);
-            console.log('Generated visa data:', visaData);
-            console.log('Generated cultural data:', culturalData);
-            
-            this.currentTrip = {
-                ...formData,
-                weather: weatherData,
-                visa: visaData,
-                cultural: culturalData,
-                checklist: this.generatePersonalizedChecklist(formData, weatherData)
+            // Get form data
+            const formData = new FormData(document.getElementById('travel-form'));
+            const tripData = {
+                destination: formData.get('destination'),
+                nationality: formData.get('nationality'),
+                departureDate: formData.get('departure-date'),
+                returnDate: formData.get('return-date'),
+                tripType: formData.get('trip-type'),
+                activities: formData.get('activities')
             };
             
-            console.log('Current trip data:', this.currentTrip);
+            // Validate required fields
+            if (!tripData.destination || !tripData.nationality || !tripData.departureDate) {
+                throw new Error('Please fill in all required fields');
+            }
             
-            // Wait for animation to complete
-            setTimeout(() => {
-                this.displayResults();
-                this.saveProgress();
-                this.showToast('Packing checklist generated successfully!', 'success');
-                this.isGenerating = false;
-            }, 3000);
+            // Show loading state
+            this.showLoadingState();
+            
+            // Call APIs in parallel
+            const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
+                getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
+                getVisaData(tripData.nationality, tripData.destination),
+                getRecommendations(tripData.destination, null, tripData.tripType, this.calculateDuration(tripData.departureDate, tripData.returnDate), tripData.activities)
+            ]);
+            
+            // Process results
+            const weather = weatherData.status === 'fulfilled' ? weatherData.value : null;
+            const visa = visaData.status === 'fulfilled' ? visaData.value : null;
+            const recommendations = recommendationsData.status === 'fulfilled' ? recommendationsData.value : null;
+            
+            // Store trip data
+            this.currentTrip = {
+                ...tripData,
+                weather,
+                visa,
+                recommendations
+            };
+            
+            // Generate and display checklist
+            this.displayResults();
             
         } catch (error) {
             console.error('Error generating checklist:', error);
+            this.showError(error.message || 'Failed to generate checklist');
+        } finally {
             this.isGenerating = false;
-            setTimeout(() => {
-                this.showError('Failed to generate checklist. Please try again.');
-            }, 1000);
         }
     }
-    
-    getFormData() {
-        try {
-            const destination = document.getElementById('destination');
-            const nationality = document.getElementById('nationality');
-            const departureDate = document.getElementById('departure-date');
-            const returnDate = document.getElementById('return-date');
-            const tripType = document.getElementById('trip-type');
-            
-            return {
-                destination: destination ? destination.value.trim() : '',
-                nationality: nationality ? nationality.value : '',
-                departureDate: departureDate ? departureDate.value : '',
-                returnDate: returnDate ? returnDate.value : '',
-                tripType: tripType ? tripType.value : ''
-            };
-        } catch (error) {
-            console.error('Error getting form data:', error);
-            return {};
-        }
+
+    calculateDuration(departureDate, returnDate) {
+        const departure = new Date(departureDate);
+        const returnD = new Date(returnDate);
+        const diffTime = Math.abs(returnD - departure);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
     }
-    
-    validateForm(data) {
-        try {
-            const required = ['destination', 'nationality', 'departureDate', 'returnDate', 'tripType'];
-            const missing = required.filter(field => !data[field]);
-            
-            if (missing.length > 0) {
-                this.showToast(`Please fill in: ${missing.join(', ')}`, 'warning');
-                return false;
-            }
-            return true;
-        } catch (error) {
-            console.error('Error validating form:', error);
-            return false;
-        }
-    }
-    
+
     showLoadingState() {
-        try {
-            const loadingSection = document.getElementById('loading-section');
-            const resultsSection = document.getElementById('results-section');
-            const errorSection = document.getElementById('error-section');
-            
-            if (loadingSection) loadingSection.classList.remove('hidden');
-            if (resultsSection) resultsSection.classList.add('hidden');
-            if (errorSection) errorSection.classList.add('hidden');
-            
-            const generateBtn = document.getElementById('generate-btn');
-            if (generateBtn) {
-                generateBtn.classList.add('loading');
-                generateBtn.disabled = true;
-            }
-            
-            console.log('Loading state displayed');
-        } catch (error) {
-            console.error('Error showing loading state:', error);
-        }
+        const loadingSection = document.getElementById('loading-section');
+        const resultsSection = document.getElementById('results-section');
+        const errorSection = document.getElementById('error-section');
+        
+        if (loadingSection) loadingSection.style.display = 'block';
+        if (resultsSection) resultsSection.style.display = 'none';
+        if (errorSection) errorSection.style.display = 'none';
+        
+        // Animate progress bar
+        this.animateProgressBar();
     }
-    
-    animateProgress() {
-        try {
-            const progressFill = document.getElementById('progress-fill');
-            const progressText = document.getElementById('progress-text');
-            
-            if (!progressFill || !progressText) return;
-            
-            const steps = [
-                { progress: 20, text: 'Fetching weather data...' },
-                { progress: 40, text: 'Checking visa requirements...' },
-                { progress: 60, text: 'Gathering cultural tips...' },
-                { progress: 80, text: 'Creating personalized checklist...' },
-                { progress: 100, text: 'Finalizing your packing list...' }
-            ];
-            
-            let currentStep = 0;
+
+    animateProgressBar() {
+        const progressFill = document.querySelector('.progress-fill');
+        if (progressFill) {
+            let width = 0;
             const interval = setInterval(() => {
-                if (currentStep < steps.length) {
-                    const step = steps[currentStep];
-                    progressFill.style.width = `${step.progress}%`;
-                    progressText.textContent = step.text;
-                    currentStep++;
-                } else {
+                width += 10;
+                progressFill.style.width = width + '%';
+                if (width >= 90) {
                     clearInterval(interval);
                 }
-            }, 500);
-            
-            return interval;
-        } catch (error) {
-            console.error('Error animating progress:', error);
+            }, 200);
         }
     }
-    
-    generateWeatherData(destination) {
-        try {
-            const weatherTypes = [
-                { temp: '22°C', description: 'Partly cloudy', icon: '⛅' },
-                { temp: '25°C', description: 'Sunny', icon: '☀️' },
-                { temp: '19°C', description: 'Light rain', icon: '🌦️' },
-                { temp: '23°C', description: 'Cloudy', icon: '☁️' },
-                { temp: '26°C', description: 'Clear skies', icon: '☀️' }
-            ];
-            
-            const forecast = [];
-            for (let i = 0; i < 5; i++) {
-                const weather = weatherTypes[i % weatherTypes.length];
-                forecast.push({
-                    date: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `Day ${i + 1}`,
-                    ...weather
-                });
-            }
-            
-            return {
-                location: destination,
-                forecast: forecast
-            };
-        } catch (error) {
-            console.error('Error generating weather data:', error);
-            return {
-                location: destination,
-                forecast: [
-                    { date: 'Today', temp: '22°C', description: 'Partly cloudy', icon: '⛅' }
-                ]
-            };
-        }
-    }
-    
-    generateVisaData(nationality, destination) {
-        try {
-            const visaRequired = Math.random() > 0.5;
-            return {
-                required: visaRequired,
-                type: visaRequired ? (Math.random() > 0.5 ? 'eVisa available' : 'Embassy visa required') : 'No visa required',
-                validity: visaRequired ? '90 days' : 'N/A',
-                documents: [
-                    'Valid passport (6+ months)',
-                    'Passport photos (if visa required)',
-                    'Proof of accommodation',
-                    'Return flight tickets',
-                    'Proof of sufficient funds'
-                ]
-            };
-        } catch (error) {
-            console.error('Error generating visa data:', error);
-            return {
-                required: false,
-                type: 'Check with embassy',
-                validity: 'Varies',
-                documents: ['Valid passport', 'Proof of accommodation']
-            };
-        }
-    }
-    
-    generateCulturalData(destination) {
-        try {
-            return {
-                etiquette: [
-                    'Dress modestly when visiting religious sites',
-                    'Learn basic greetings in the local language',
-                    'Respect local customs and traditions',
-                    'Be punctual for appointments'
-                ],
-                dosDonts: {
-                    dos: [
-                        'Try local cuisine and specialties',
-                        'Carry some cash for small vendors',
-                        'Be respectful of local customs',
-                        'Learn basic phrases in the local language',
-                        'Research cultural norms beforehand'
-                    ],
-                    donts: [
-                        'Don\'t wear revealing clothing in conservative areas',
-                        'Don\'t refuse offered food or drink politely',
-                        'Don\'t point with your finger at people',
-                        'Don\'t take photos without permission',
-                        'Don\'t ignore local etiquette'
-                    ]
-                },
-                safety: [
-                    'Keep copies of important documents',
-                    'Stay aware of your surroundings',
-                    'Use registered taxis or ride-sharing apps',
-                    'Avoid displaying expensive items',
-                    'Keep emergency contacts handy'
-                ]
-            };
-        } catch (error) {
-            console.error('Error generating cultural data:', error);
-            return {
-                etiquette: ['Respect local customs'],
-                dosDonts: {
-                    dos: ['Be respectful', 'Learn basic phrases'],
-                    donts: ['Don\'t be disrespectful', 'Don\'t ignore local customs']
-                },
-                safety: ['Stay alert', 'Keep documents safe']
-            };
-        }
-    }
-    
-    generatePersonalizedChecklist(formData, weatherData) {
-        try {
-            const checklist = JSON.parse(JSON.stringify(this.packingCategories));
-            
-            // Add weather-specific items
-            if (weatherData.forecast && weatherData.forecast.some(day => day.description.includes('rain'))) {
-                checklist.clothing.items.push({
-                    name: 'Rain Jacket',
-                    description: 'Waterproof protection',
-                    essential: true,
-                    weatherBased: true
-                });
-                checklist.accessories.items.push({
-                    name: 'Waterproof Umbrella',
-                    description: 'Essential for rainy weather',
-                    essential: true,
-                    weatherBased: true
-                });
-            }
-            
-            // Add trip-type specific items
-            if (formData.tripType === 'business') {
-                checklist.clothing.items.push({
-                    name: 'Business Suits',
-                    description: 'Professional attire',
-                    essential: true,
-                    tripTypeBased: true
-                });
-                checklist.accessories.items.push({
-                    name: 'Business Cards',
-                    description: 'Professional networking',
-                    essential: false,
-                    tripTypeBased: true
-                });
-            } else if (formData.tripType === 'beach') {
-                checklist.clothing.items.push({
-                    name: 'Swimwear',
-                    description: 'Beach essentials',
-                    essential: true,
-                    tripTypeBased: true
-                });
-                checklist.toiletries.items.push({
-                    name: 'High SPF Sunscreen',
-                    description: 'Beach protection',
-                    essential: true,
-                    tripTypeBased: true
-                });
-            } else if (formData.tripType === 'adventure') {
-                checklist.clothing.items.push({
-                    name: 'Hiking Boots',
-                    description: 'Sturdy footwear',
-                    essential: true,
-                    tripTypeBased: true
-                });
-                checklist.accessories.items.push({
-                    name: 'Backpack',
-                    description: 'For day trips',
-                    essential: true,
-                    tripTypeBased: true
-                });
-            }
-            
-            return checklist;
-        } catch (error) {
-            console.error('Error generating personalized checklist:', error);
-            return this.packingCategories;
-        }
-    }
-    
+
     displayResults() {
-        try {
-            console.log('Displaying results...');
-            
-            const loadingSection = document.getElementById('loading-section');
-            const resultsSection = document.getElementById('results-section');
-            const errorSection = document.getElementById('error-section');
-            
-            if (loadingSection) loadingSection.classList.add('hidden');
-            if (resultsSection) resultsSection.classList.remove('hidden');
-            if (errorSection) errorSection.classList.add('hidden');
-            
-            // Reset generate button
-            const generateBtn = document.getElementById('generate-btn');
-            if (generateBtn) {
-                generateBtn.classList.remove('loading');
-                generateBtn.disabled = false;
-            }
-            
-            this.displayTripOverview();
-            this.displayWeatherInfo();
-            this.displayVisaInfo();
-            this.displayCulturalTips();
-            this.displayChecklist();
-            this.updateProgress();
-            this.setupResultsEventListeners();
-            
-            // Scroll to results
-            if (resultsSection) {
-                resultsSection.scrollIntoView({ behavior: 'smooth' });
-            }
-            
-            console.log('Results displayed successfully');
-        } catch (error) {
-            console.error('Error displaying results:', error);
-            this.showError('Error displaying results. Please try again.');
+        const loadingSection = document.getElementById('loading-section');
+        const resultsSection = document.getElementById('results-section');
+        const errorSection = document.getElementById('error-section');
+        
+        if (loadingSection) loadingSection.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'block';
+        if (errorSection) errorSection.style.display = 'none';
+        
+        // Update trip overview
+        this.updateTripOverview();
+        
+        // Update weather section
+        this.updateWeatherSection();
+        
+        // Update visa section
+        this.updateVisaSection();
+        
+        // Update checklist
+        this.updateChecklist();
+    }
+
+    updateTripOverview() {
+        const trip = this.currentTrip;
+        const tripTitle = document.querySelector('.trip-overview h2');
+        const tripDetails = document.querySelector('.trip-details');
+        
+        if (tripTitle) {
+            tripTitle.textContent = `Your Trip to ${trip.destination}`;
+        }
+        
+        if (tripDetails) {
+            const duration = this.calculateDuration(trip.departureDate, trip.returnDate);
+            tripDetails.textContent = `${trip.departureDate} - ${trip.returnDate} • ${duration} days • ${trip.tripType}`;
         }
     }
-    
-    setupResultsEventListeners() {
-        try {
-            // Control buttons
-            const checkAllBtn = document.getElementById('check-all-btn');
-            const uncheckAllBtn = document.getElementById('uncheck-all-btn');
-            const exportBtn = document.getElementById('export-btn');
-            const shareBtn = document.getElementById('share-btn');
-            
-            if (checkAllBtn) {
-                checkAllBtn.replaceWith(checkAllBtn.cloneNode(true));
-                document.getElementById('check-all-btn').addEventListener('click', () => this.checkAllItems());
-            }
-            if (uncheckAllBtn) {
-                uncheckAllBtn.replaceWith(uncheckAllBtn.cloneNode(true));
-                document.getElementById('uncheck-all-btn').addEventListener('click', () => this.uncheckAllItems());
-            }
-            if (exportBtn) {
-                exportBtn.replaceWith(exportBtn.cloneNode(true));
-                document.getElementById('export-btn').addEventListener('click', () => this.exportChecklist());
-            }
-            if (shareBtn) {
-                shareBtn.replaceWith(shareBtn.cloneNode(true));
-                document.getElementById('share-btn').addEventListener('click', () => this.shareChecklist());
-            }
-        } catch (error) {
-            console.error('Error setting up results event listeners:', error);
-        }
-    }
-    
-    displayTripOverview() {
-        try {
-            if (!this.currentTrip) return;
-            
-            const trip = this.currentTrip;
-            const departureDate = new Date(trip.departureDate);
-            const returnDate = new Date(trip.returnDate);
-            const duration = Math.ceil((returnDate - departureDate) / (1000 * 60 * 60 * 24));
-            
-            const tripTitle = document.getElementById('trip-title');
-            const tripDetails = document.getElementById('trip-details');
-            
-            if (tripTitle) {
-                tripTitle.textContent = `Your Trip to ${trip.destination}`;
-            }
-            if (tripDetails) {
-                tripDetails.textContent = `${departureDate.toLocaleDateString()} - ${returnDate.toLocaleDateString()} • ${duration} days • ${trip.tripType.charAt(0).toUpperCase() + trip.tripType.slice(1)} Trip`;
-            }
-        } catch (error) {
-            console.error('Error displaying trip overview:', error);
-        }
-    }
-    
-    displayWeatherInfo() {
-        try {
-            const weatherContainer = document.getElementById('weather-info');
-            if (!weatherContainer || !this.currentTrip.weather) return;
-            
-            const forecast = this.currentTrip.weather.forecast;
-            
-            weatherContainer.innerHTML = forecast.map(day => `
+
+    updateWeatherSection() {
+        const weatherSection = document.querySelector('.weather-info');
+        if (!weatherSection || !this.currentTrip.weather) return;
+        
+        const weather = this.currentTrip.weather;
+        weatherSection.innerHTML = `
+            <div class="weather-current">
+                <h4>Current Weather</h4>
                 <div class="weather-day">
-                    <div>
-                        <div class="weather-date">${day.date}</div>
-                        <div class="weather-desc">${day.icon} ${day.description}</div>
+                    <span class="weather-date">Now</span>
+                    <span class="weather-temp">${weather.current.temperature}°C</span>
+                    <span class="weather-desc">${weather.current.description}</span>
+                </div>
+            </div>
+            <div class="weather-forecast">
+                <h4>5-Day Forecast</h4>
+                ${weather.forecast.map(day => `
+                    <div class="weather-day">
+                        <span class="weather-date">${day.date}</span>
+                        <span class="weather-temp">${day.temperature}°C</span>
+                        <span class="weather-desc">${day.description}</span>
                     </div>
-                    <div class="weather-temp">${day.temp}</div>
-                </div>
-            `).join('');
-        } catch (error) {
-            console.error('Error displaying weather info:', error);
-        }
+                `).join('')}
+            </div>
+        `;
     }
-    
-    displayVisaInfo() {
-        try {
-            const visaContainer = document.getElementById('visa-info');
-            if (!visaContainer || !this.currentTrip.visa) return;
+
+    updateVisaSection() {
+        const visaSection = document.querySelector('.visa-info');
+        if (!visaSection || !this.currentTrip.visa) return;
+        
+        const visa = this.currentTrip.visa;
+        const statusClass = visa.visaStatus.replace('_', '-');
+        
+        visaSection.innerHTML = `
+            <div class="visa-requirement">
+                <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
+                <p>${visa.additionalInfo}</p>
+                <small>Stay Duration: ${visa.stayDuration}</small>
+            </div>
+        `;
+    }
+
+    updateChecklist() {
+        const checklistCategories = document.querySelector('.checklist-categories');
+        if (!checklistCategories) return;
+        
+        // Use AI recommendations if available, otherwise use default categories
+        const categories = this.currentTrip.recommendations?.categories || this.packingCategories;
+        
+        let totalItems = 0;
+        let categoriesHTML = '';
+        
+        for (const [categoryKey, category] of Object.entries(categories)) {
+            const itemsCount = category.items.length;
+            totalItems += itemsCount;
             
-            const visa = this.currentTrip.visa;
-            
-            const statusClass = visa.required ? 'required' : 'not-required';
-            const statusIcon = visa.required ? '❌' : '✅';
-            const statusText = visa.required ? `Visa Required - ${visa.type}` : 'No visa required';
-            
-            visaContainer.innerHTML = `
-                <div class="visa-requirement">
-                    <span>${statusIcon}</span>
-                    <span class="visa-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="visa-documents">
-                    <h4>Required Documents:</h4>
-                    <ul>
-                        ${visa.documents.map(doc => `<li>${doc}</li>`).join('')}
-                    </ul>
+            categoriesHTML += `
+                <div class="checklist-category">
+                    <div class="category-header">
+                        <h4 class="category-title">${category.name}</h4>
+                        <span class="category-count">${itemsCount} items</span>
+                    </div>
+                    <div class="checklist-items">
+                        ${category.items.map(item => `
+                            <div class="checklist-item" data-category="${categoryKey}" data-item="${item.name}">
+                                <div class="item-checkbox" onclick="app.toggleItem('${categoryKey}', '${item.name}')"></div>
+                                <div class="item-text">
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-description">${item.description}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `;
-        } catch (error) {
-            console.error('Error displaying visa info:', error);
         }
+        
+        checklistCategories.innerHTML = categoriesHTML;
+        
+        // Update progress stats
+        this.updateProgressStats(totalItems, 0);
     }
-    
-    displayCulturalTips() {
-        try {
-            const culturalContainer = document.getElementById('cultural-info');
-            if (!culturalContainer || !this.currentTrip.cultural) return;
-            
-            const cultural = this.currentTrip.cultural;
-            
-            culturalContainer.innerHTML = `
-                <div class="cultural-section">
-                    <h4>✅ Do's</h4>
-                    <ul>
-                        ${cultural.dosDonts.dos.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-                <div class="cultural-section">
-                    <h4>❌ Don'ts</h4>
-                    <ul>
-                        ${cultural.dosDonts.donts.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-                <div class="cultural-section">
-                    <h4>🛡️ Safety Tips</h4>
-                    <ul>
-                        ${cultural.safety.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Error displaying cultural tips:', error);
+
+    updateProgressStats(total, packed) {
+        const totalItems = document.querySelector('.stat-number');
+        const packedItems = document.querySelectorAll('.stat-number')[1];
+        const remainingItems = document.querySelectorAll('.stat-number')[2];
+        
+        if (totalItems) totalItems.textContent = total;
+        if (packedItems) packedItems.textContent = packed;
+        if (remainingItems) remainingItems.textContent = total - packed;
+    }
+
+    toggleItem(category, itemName) {
+        const itemElement = document.querySelector(`[data-category="${category}"][data-item="${itemName}"]`);
+        if (!itemElement) return;
+        
+        const checkbox = itemElement.querySelector('.item-checkbox');
+        const isChecked = checkbox.classList.contains('checked');
+        
+        if (isChecked) {
+            checkbox.classList.remove('checked');
+            itemElement.classList.remove('checked');
+        } else {
+            checkbox.classList.add('checked');
+            itemElement.classList.add('checked');
         }
+        
+        // Update progress
+        this.updateProgress();
     }
-    
-    displayChecklist() {
-        try {
-            const checklistContainer = document.getElementById('checklist-categories');
-            if (!checklistContainer || !this.currentTrip.checklist) return;
-            
-            const checklist = this.currentTrip.checklist;
-            console.log('Displaying checklist:', checklist);
-            
-            checklistContainer.innerHTML = Object.entries(checklist).map(([categoryKey, category]) => {
-                const totalItems = category.items.length;
-                const packedItems = category.items.filter(item => 
-                    this.checklistData[this.getItemId(categoryKey, item.name)]
-                ).length;
-                
-                return `
-                    <div class="checklist-category">
-                        <div class="category-header">
-                            <h4 class="category-title">${category.name}</h4>
-                            <span class="category-count">${packedItems}/${totalItems}</span>
-                        </div>
-                        <div class="checklist-items">
-                            ${category.items.map(item => {
-                                const itemId = this.getItemId(categoryKey, item.name);
-                                const isChecked = this.checklistData[itemId] || false;
-                                return `
-                                    <div class="checklist-item ${isChecked ? 'checked' : ''}" data-item-id="${itemId}">
-                                        <div class="item-checkbox ${isChecked ? 'checked' : ''}"></div>
-                                        <div class="item-content">
-                                            <div class="item-text">${item.name}</div>
-                                            <div class="item-description">${item.description}</div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            // Add click listeners to checklist items
-            checklistContainer.querySelectorAll('.checklist-item').forEach(item => {
-                item.addEventListener('click', () => this.toggleChecklistItem(item));
-            });
-            
-            console.log('Checklist displayed with', checklistContainer.querySelectorAll('.checklist-item').length, 'items');
-        } catch (error) {
-            console.error('Error displaying checklist:', error);
-        }
-    }
-    
-    getItemId(category, itemName) {
-        return `${category}-${itemName.toLowerCase().replace(/\s+/g, '-')}`;
-    }
-    
-    toggleChecklistItem(itemElement) {
-        try {
-            const itemId = itemElement.dataset.itemId;
-            const isChecked = itemElement.classList.contains('checked');
-            
-            if (isChecked) {
-                itemElement.classList.remove('checked');
-                itemElement.querySelector('.item-checkbox').classList.remove('checked');
-                this.checklistData[itemId] = false;
-            } else {
-                itemElement.classList.add('checked');
-                itemElement.querySelector('.item-checkbox').classList.add('checked');
-                this.checklistData[itemId] = true;
-            }
-            
-            this.updateProgress();
-            this.saveProgress();
-        } catch (error) {
-            console.error('Error toggling checklist item:', error);
-        }
-    }
-    
+
     updateProgress() {
-        try {
-            const allItems = document.querySelectorAll('.checklist-item');
-            const checkedItems = document.querySelectorAll('.checklist-item.checked');
-            
-            const total = allItems.length;
-            const packed = checkedItems.length;
-            const percentage = total > 0 ? Math.round((packed / total) * 100) : 0;
-            
-            this.checklistProgress = { packed, total };
-            
-            // Update progress display
-            const progressPercentage = document.getElementById('progress-percentage');
-            const totalItemsEl = document.getElementById('total-items');
-            const packedItemsEl = document.getElementById('packed-items');
-            const remainingItemsEl = document.getElementById('remaining-items');
-            
-            if (progressPercentage) progressPercentage.textContent = `${percentage}%`;
-            if (totalItemsEl) totalItemsEl.textContent = total;
-            if (packedItemsEl) packedItemsEl.textContent = packed;
-            if (remainingItemsEl) remainingItemsEl.textContent = total - packed;
-            
-            // Update circle progress
-            const circleProgress = document.getElementById('circle-progress');
-            if (circleProgress) {
-                circleProgress.style.background = `conic-gradient(white ${percentage * 3.6}deg, rgba(255, 255, 255, 0.3) ${percentage * 3.6}deg)`;
-            }
-            
-            // Update category counts
-            if (this.currentTrip && this.currentTrip.checklist) {
-                Object.keys(this.currentTrip.checklist).forEach(categoryKey => {
-                    const categoryItems = document.querySelectorAll(`[data-item-id^="${categoryKey}-"]`);
-                    const categoryChecked = document.querySelectorAll(`[data-item-id^="${categoryKey}-"].checked`);
-                    const countElement = document.querySelector(`[data-item-id^="${categoryKey}-"]`)
-                        ?.closest('.checklist-category')
-                        ?.querySelector('.category-count');
-                    
-                    if (countElement) {
-                        countElement.textContent = `${categoryChecked.length}/${categoryItems.length}`;
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error updating progress:', error);
-        }
+        const totalItems = document.querySelectorAll('.checklist-item').length;
+        const packedItems = document.querySelectorAll('.checklist-item.checked').length;
+        const percentage = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0;
+        
+        // Update progress circle
+        const progressFill = document.querySelector('.progress-fill');
+        const progressPercentage = document.querySelector('.progress-percentage');
+        
+        if (progressFill) progressFill.style.width = percentage + '%';
+        if (progressPercentage) progressPercentage.textContent = percentage + '%';
+        
+        // Update stats
+        this.updateProgressStats(totalItems, packedItems);
+        
+        // Save progress
+        this.checklistProgress = { packed: packedItems, total: totalItems };
+        localStorage.setItem('travel-checklist-progress', JSON.stringify(this.checklistProgress));
     }
-    
-    checkAllItems() {
-        try {
-            document.querySelectorAll('.checklist-item:not(.checked)').forEach(item => {
-                this.toggleChecklistItem(item);
-            });
-            this.showToast('All items checked!', 'success');
-        } catch (error) {
-            console.error('Error checking all items:', error);
-        }
-    }
-    
-    uncheckAllItems() {
-        try {
-            document.querySelectorAll('.checklist-item.checked').forEach(item => {
-                this.toggleChecklistItem(item);
-            });
-            this.showToast('All items unchecked!', 'success');
-        } catch (error) {
-            console.error('Error unchecking all items:', error);
-        }
-    }
-    
-    exportChecklist() {
-        try {
-            if (!this.currentTrip) {
-                this.showToast('No checklist to export', 'warning');
-                return;
-            }
-            
-            const content = this.generateExportContent();
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `packing-checklist-${this.currentTrip.destination.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('Checklist exported successfully!', 'success');
-        } catch (error) {
-            console.error('Error exporting checklist:', error);
-            this.showToast('Error exporting checklist', 'error');
-        }
-    }
-    
-    generateExportContent() {
-        try {
-            const trip = this.currentTrip;
-            let content = `TRAVEL PACKER\n`;
-            content += `========================\n\n`;
-            content += `Destination: ${trip.destination}\n`;
-            content += `Dates: ${trip.departureDate} to ${trip.returnDate}\n`;
-            content += `Trip Type: ${trip.tripType}\n`;
-            content += `Generated: ${new Date().toLocaleDateString()}\n\n`;
-            
-            Object.entries(trip.checklist).forEach(([categoryKey, category]) => {
-                content += `${category.name}\n`;
-                content += `${'-'.repeat(category.name.length)}\n`;
-                
-                category.items.forEach(item => {
-                    const itemId = this.getItemId(categoryKey, item.name);
-                    const isChecked = this.checklistData[itemId] ? '✓' : '☐';
-                    content += `${isChecked} ${item.name} - ${item.description}\n`;
-                });
-                content += '\n';
-            });
-            
-            return content;
-        } catch (error) {
-            console.error('Error generating export content:', error);
-            return 'Error generating export content';
-        }
-    }
-    
-    shareChecklist() {
-        try {
-            if (!this.currentTrip) {
-                this.showToast('No checklist to share', 'warning');
-                return;
-            }
-            
-            const shareData = {
-                title: `Packing Checklist for ${this.currentTrip.destination}`,
-                text: 'Check out my personalized travel packer!',
-                url: window.location.href
-            };
-            
-            if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-                navigator.share(shareData).catch(() => {
-                    this.fallbackShare();
-                });
-            } else {
-                this.fallbackShare();
-            }
-        } catch (error) {
-            console.error('Error sharing checklist:', error);
-            this.fallbackShare();
-        }
-    }
-    
-    fallbackShare() {
-        try {
-            const shareText = `Check out my personalized travel packer for ${this.currentTrip.destination}!`;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(shareText).then(() => {
-                    this.showToast('Checklist text copied to clipboard!', 'success');
-                }).catch(() => {
-                    this.showToast('Unable to copy to clipboard', 'error');
-                });
-            } else {
-                this.showToast('Sharing not supported on this device', 'info');
-            }
-        } catch (error) {
-            console.error('Error in fallback share:', error);
-            this.showToast('Unable to share checklist', 'error');
-        }
-    }
-    
+
     showError(message) {
-        try {
-            const loadingSection = document.getElementById('loading-section');
-            const resultsSection = document.getElementById('results-section');
-            const errorSection = document.getElementById('error-section');
-            const errorMessage = document.getElementById('error-message');
-            
-            if (loadingSection) loadingSection.classList.add('hidden');
-            if (resultsSection) resultsSection.classList.add('hidden');
-            if (errorSection) errorSection.classList.remove('hidden');
-            if (errorMessage) errorMessage.textContent = message;
-            
-            // Reset generate button
-            const generateBtn = document.getElementById('generate-btn');
-            if (generateBtn) {
-                generateBtn.classList.remove('loading');
-                generateBtn.disabled = false;
+        const loadingSection = document.getElementById('loading-section');
+        const resultsSection = document.getElementById('results-section');
+        const errorSection = document.getElementById('error-section');
+        
+        if (loadingSection) loadingSection.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'none';
+        if (errorSection) {
+            errorSection.style.display = 'block';
+            const errorMessage = errorSection.querySelector('p');
+            if (errorMessage) {
+                errorMessage.textContent = message;
             }
-        } catch (error) {
-            console.error('Error showing error:', error);
         }
+        
+        this.showToast(message, 'error');
     }
-    
+
     retryGeneration() {
-        try {
-            const errorSection = document.getElementById('error-section');
-            if (errorSection) {
-                errorSection.classList.add('hidden');
-            }
-            this.generateChecklist();
-        } catch (error) {
-            console.error('Error retrying generation:', error);
-        }
+        this.generateChecklist();
     }
-    
+
     showToast(message, type = 'info') {
         try {
-            const toastContainer = document.getElementById('toast-container');
-            if (!toastContainer) return;
-            
+            // Create toast container if it doesn't exist
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
-            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
-            
+            toast.innerHTML = `
+                <span>${message}</span>
+            `;
+
+            // Add to container
             toastContainer.appendChild(toast);
-            
+
+            // Remove after 4 seconds
             setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.remove();
-                }
+                toast.remove();
             }, 4000);
         } catch (error) {
             console.error('Error showing toast:', error);
         }
     }
-    
-    saveProgress() {
-        try {
-            const data = {
-                currentTrip: this.currentTrip,
-                checklistData: this.checklistData,
-                lastUpdated: new Date().toISOString()
-            };
-            localStorage.setItem('travel-app-data', JSON.stringify(data));
-        } catch (error) {
-            console.error('Error saving progress:', error);
-        }
-    }
-    
-    loadSavedProgress() {
-        try {
-            const savedData = localStorage.getItem('travel-app-data');
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                if (data.currentTrip && data.checklistData) {
-                    this.currentTrip = data.currentTrip;
-                    this.checklistData = data.checklistData;
-                    
-                    // Show saved trip data
-                    this.displayResults();
-                    this.showToast('Welcome back! Your previous trip data has been restored.', 'info');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading saved data:', error);
-        }
-    }
 }
 
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing app...');
-    try {
-        new TravelPackingApp();
-    } catch (error) {
-        console.error('Error initializing app:', error);
-    }
-});
-
-// Service Worker Registration for PWA
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Register service worker with inline implementation
-        const swCode = `
-            const CACHE_NAME = 'travel-packing-v1';
-            const urlsToCache = [
-                '/',
-                '/index.html',
-                '/style.css',
-                '/app.js'
-            ];
-
-            self.addEventListener('install', (event) => {
-              event.waitUntil(
-                caches.open(CACHE_NAME)
-                  .then((cache) => cache.addAll(urlsToCache))
-              );
-            });
-
-            self.addEventListener('fetch', (event) => {
-              event.respondWith(
-                caches.match(event.request)
-                  .then((response) => {
-                    if (response) {
-                      return response;
-                    }
-                    return fetch(event.request);
-                  }
-                )
-              );
-            });
-        `;
-        
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        
-        navigator.serviceWorker.register(swUrl)
-            .then((registration) => {
-                console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
+// Initialize the app
+const app = new TravelPackingApp();
