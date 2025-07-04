@@ -329,7 +329,7 @@ class TravelPackingApp {
         }
     }
 
-    // THE KEY NEW METHOD - CONNECTS APIs TO UI
+    // MAIN API INTEGRATION METHOD
     async generateChecklist() {
         if (this.isGenerating) return;
         
@@ -490,13 +490,13 @@ class TravelPackingApp {
         if (!visaSection || !this.currentTrip.visa) return;
         
         const visa = this.currentTrip.visa;
-        const statusClass = visa.visaStatus.replace('_', '-');
+        const statusClass = visa.visaStatus ? visa.visaStatus.replace('_', '-') : 'unknown';
         
         visaSection.innerHTML = `
             <div class="visa-requirement">
                 <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
-                <p>${visa.additionalInfo}</p>
-                <small>Stay Duration: ${visa.stayDuration}</small>
+                <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
+                <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
             </div>
         `;
     }
