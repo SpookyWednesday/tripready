@@ -1,0 +1,27 @@
+{
+  "name": "travel-packer",
+  "version": "1.0.0",
+  "description": "AI-powered travel packing assistant with real-time weather, visa, and packing recommendations",
+  "main": "app.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required for static site'",
+    "test": "echo 'No tests specified'"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "node-cache": "^5.1.2"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "keywords": [
+    "travel",
+    "packing",
+    "assistant",
+    "netlify",
+    "functions"
+  ],
+  "author": "Fuzileqios",
+  "license": "MIT"
+}

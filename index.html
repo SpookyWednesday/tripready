@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Packing Assistant - Smart Travel Checklists</title>
+    <meta name="description" content="Generate personalized travel packing checklists based on destination weather, visa requirements, and cultural tips">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVHJhdmVsIFBhY2tpbmcgQXNzaXN0YW50Iiwic2hvcnRfbmFtZSI6IlBhY2tpbmdBcHAiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzIxODBEOCIsInRoZW1lX2NvbG9yIjoiIzIxODBEOCIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0YldsdWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBek1qQWdNekl3SWo0OGNtVmpkQ0I0UFNJMUlpQjVQU0kxSWlCM2FXUjBhRDBpTXpFd0lpQm9aV2xuYUhROUlqTXhNQ0lnY25nOUlqVWlJSEo1UFNJMUlpQm1hV3hzUFNJak1qRTRNRVE0SWk4K1BDOXpkbWMrIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+    <meta name="theme-color" content="#2180D8">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMjAgMzIwIj4KPHJlY3QgeD0iNSIgeT0iNSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSIzMTAiIHJ4PSI1IiByeT0iNSIgZmlsbD0iIzIxODBEOCIvPgo8L3N2Zz4=">
+</head>
+<body data-color-scheme="light" class="theme-default">
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="app-title">✈️ Travel Packing Assistant</h1>
+                    <p class="app-subtitle">Smart packing checklists for your perfect trip</p>
+                </div>
+                <div class="theme-selector-container">
+                    <label for="theme-selector" class="form-label">Theme</label>
+                    <select id="theme-selector" class="form-control theme-selector">
+                        <option value="theme-default">Default</option>
+                        <option value="theme-light">Light</option>
+                        <option value="theme-dark">Dark</option>
+                        <option value="theme-blue">Blue</option>
+                        <option value="theme-green">Green</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Form Section -->
+            <section class="form-section card">
+                <div class="card__body">
+                    <h2>Plan Your Trip</h2>
+                    <form id="travel-form" class="travel-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="destination" class="form-label">Destination</label>
+                                <input type="text" id="destination" class="form-control" placeholder="e.g., Paris, France" required>
+                                <div id="destination-suggestions" class="suggestions-list"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="nationality" class="form-label">Your Nationality</label>
+                                <select id="nationality" class="form-control" required>
+                                    <option value="">Select your nationality</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="departure-date" class="form-label">Departure Date</label>
+                                <input type="date" id="departure-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="return-date" class="form-label">Return Date</label>
+                                <input type="date" id="return-date" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trip-type" class="form-label">Trip Type</label>
+                            <select id="trip-type" class="form-control" required>
+                                <option value="">Select trip type</option>
+                                <option value="leisure">Leisure</option>
+                                <option value="business">Business</option>
+                                <option value="adventure">Adventure</option>
+                                <option value="cultural">Cultural</option>
+                                <option value="beach">Beach</option>
+                                <option value="city">City Break</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn--primary btn--full-width" id="generate-btn">
+                            <span class="btn-text">Generate My Packing Checklist</span>
+                            <span class="btn-loading hidden">
+                                <span class="loading-spinner"></span>
+                                Generating...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <section id="loading-section" class="loading-section hidden">
+                <div class="loading-card card">
+                    <div class="card__body text-center">
+                        <div class="loading-spinner large"></div>
+                        <h3>Creating Your Perfect Packing List</h3>
+                        <p>Analyzing weather, visa requirements, and local customs...</p>
+                        <div class="loading-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <p class="progress-text" id="progress-text">Fetching weather data...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="results-section hidden">
+                <!-- Trip Overview -->
+                <div class="trip-overview card">
+                    <div class="card__body">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 id="trip-title">Your Trip to Paris</h2>
+                                <p id="trip-details" class="trip-details">March 15-22, 2024 • 7 days • Business Trip</p>
+                            </div>
+                            <div class="trip-actions">
+                                <button class="btn btn--outline btn--sm" id="export-btn">📄 Export</button>
+                                <button class="btn btn--outline btn--sm" id="share-btn">📤 Share</button>
+                            </div>
+                        </div>
+                        <div class="progress-overview">
+                            <div class="progress-circle">
+                                <div class="circle-progress" id="circle-progress">
+                                    <span class="progress-percentage" id="progress-percentage">0%</span>
+                                </div>
+                            </div>
+                            <div class="progress-stats">
+                                <div class="stat">
+                                    <span class="stat-number" id="total-items">0</span>
+                                    <span class="stat-label">Total Items</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="packed-items">0</span>
+                                    <span class="stat-label">Packed</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="remaining-items">0</span>
+                                    <span class="stat-label">Remaining</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather & Visa Info -->
+                <div class="info-cards-grid">
+                    <div class="weather-card card">
+                        <div class="card__body">
+                            <h3>🌤️ Weather Forecast</h3>
+                            <div id="weather-info" class="weather-info">
+                                <!-- Weather data will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visa-card card">
+                        <div class="card__body">
+                            <h3>🛂 Travel Requirements</h3>
+                            <div id="visa-info" class="visa-info">
+                                <!-- Visa info will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cultural Tips -->
+                <div class="cultural-tips card">
+                    <div class="card__body">
+                        <h3>🌍 Cultural Tips & Local Customs</h3>
+                        <div id="cultural-info" class="cultural-info">
+                            <!-- Cultural tips will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Packing Checklist -->
+                <div class="checklist-container">
+                    <div class="checklist-header">
+                        <h3>📦 Your Personalized Packing Checklist</h3>
+                        <div class="checklist-controls">
+                            <button class="btn btn--secondary btn--sm" id="check-all-btn">✓ Check All</button>
+                            <button class="btn btn--secondary btn--sm" id="uncheck-all-btn">✗ Uncheck All</button>
+                        </div>
+                    </div>
+                    
+                    <div class="checklist-categories" id="checklist-categories">
+                        <!-- Checklist categories will be inserted here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="error-section" class="error-section hidden">
+                <div class="error-card card">
+                    <div class="card__body text-center">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Oops! Something went wrong</h3>
+                        <p id="error-message">We couldn't generate your packing list. Please try again.</p>
+                        <button class="btn btn--primary" id="retry-btn">Try Again</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2024 Travel Packing Assistant. Made with ❤️ for travelers worldwide.</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
