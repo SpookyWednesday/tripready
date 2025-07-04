@@ -1,4 +1,4 @@
-// Travel Packing Assistant - Main Application Logic
+// Travel Packer - Main Application Logic
 // API Configuration - ADD THIS TO THE TOP
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/api' : '/api';
 
@@ -985,7 +985,7 @@ class TravelPackingApp {
     generateExportContent() {
         try {
             const trip = this.currentTrip;
-            let content = `TRAVEL PACKING CHECKLIST\n`;
+            let content = `TRAVEL PACKER\n`;
             content += `========================\n\n`;
             content += `Destination: ${trip.destination}\n`;
             content += `Dates: ${trip.departureDate} to ${trip.returnDate}\n`;
@@ -1020,7 +1020,7 @@ class TravelPackingApp {
             
             const shareData = {
                 title: `Packing Checklist for ${this.currentTrip.destination}`,
-                text: 'Check out my personalized travel packing checklist!',
+                text: 'Check out my personalized travel packer!',
                 url: window.location.href
             };
             
@@ -1039,7 +1039,7 @@ class TravelPackingApp {
     
     fallbackShare() {
         try {
-            const shareText = `Check out my personalized travel packing checklist for ${this.currentTrip.destination}!`;
+            const shareText = `Check out my personalized travel packer for ${this.currentTrip.destination}!`;
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareText).then(() => {
                     this.showToast('Checklist text copied to clipboard!', 'success');

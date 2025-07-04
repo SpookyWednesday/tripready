@@ -1,5 +1,5 @@
 {
-  "name": "travel-packer",
+  "name": "tripready",
   "version": "1.0.0",
   "description": "AI-powered travel packing assistant with real-time weather, visa, and packing recommendations",
   "main": "app.js",
