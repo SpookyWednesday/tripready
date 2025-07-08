@@ -6,22 +6,52 @@ const API_BASE = window.location.hostname.includes('localhost') ? 'http://localh
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
         const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
+        
+        if (!response.ok) {
+            throw new Error(`Weather API returned ${response.status}`);
+        }
+        
         return await response.json();
     } catch (error) {
         console.error('Weather API Error:', error);
-        return null;
+        return {
+            location: { name: destination, country: 'Unknown' },
+            current: {
+                temperature: 20,
+                description: 'Weather data unavailable',
+                humidity: 50,
+                windSpeed: 5,
+                icon: '01d'
+            },
+            forecast: Array(5).fill(null).map((_, i) => ({
+                date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                temperature: 20,
+                description: 'Weather data unavailable',
+                icon: '01d'
+            })),
+            error: 'Weather service temporarily unavailable'
+        };
     }
 }
 
 async function getVisaData(nationality, destination) {
     try {
         const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`);
+        
+        if (!response.ok) {
+            throw new Error(`Visa API returned ${response.status}`);
+        }
+        
         return await response.json();
     } catch (error) {
         console.error('Visa API Error:', error);
         return {
+            nationality: nationality,
+            destination: destination,
             visaStatus: 'unknown',
-            visaMessage: 'Check with embassy'
+            visaMessage: 'Check with embassy - service temporarily unavailable',
+            additionalInfo: 'Please verify visa requirements with the embassy',
+            stayDuration: 'Check embassy guidelines'
         };
     }
 }
@@ -41,6 +71,11 @@ async function getRecommendations(destination, weather, tripType, duration, acti
                 activities
             })
         });
+        
+        if (!response.ok) {
+            throw new Error(`Recommendations API returned ${response.status}`);
+        }
+        
         return await response.json();
     } catch (error) {
         console.error('Recommendations API Error:', error);
@@ -329,37 +364,56 @@ class TravelPackingApp {
         }
     }
 
-    // MAIN API INTEGRATION METHOD
+    // MAIN API INTEGRATION METHOD - THE KEY FIX
     async generateChecklist() {
         if (this.isGenerating) return;
         
         try {
             this.isGenerating = true;
+            console.log('Starting checklist generation...');
             
-            // Get form data
-            const formData = new FormData(document.getElementById('travel-form'));
+            // Get form element
+            const form = document.getElementById('travel-form');
+            if (!form) {
+                throw new Error('Travel form not found');
+            }
+            
+            // Create FormData from form
+            const formData = new FormData(form);
+            
+            // Extract and validate data
             const tripData = {
-                destination: formData.get('destination'),
-                nationality: formData.get('nationality'),
+                destination: formData.get('destination')?.trim(),
+                nationality: formData.get('nationality')?.trim(),
                 departureDate: formData.get('departure-date'),
                 returnDate: formData.get('return-date'),
                 tripType: formData.get('trip-type'),
-                activities: formData.get('activities')
+                activities: formData.get('activities')?.trim() || ''
             };
             
+            console.log('Form data extracted:', tripData);
+            
             // Validate required fields
-            if (!tripData.destination || !tripData.nationality || !tripData.departureDate) {
-                throw new Error('Please fill in all required fields');
+            const requiredFields = ['destination', 'nationality', 'departureDate', 'returnDate', 'tripType'];
+            const missingFields = requiredFields.filter(field => !tripData[field]);
+            
+            if (missingFields.length > 0) {
+                throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
             }
             
             // Show loading state
             this.showLoadingState();
             
-            // Call APIs in parallel
+            // Calculate trip duration
+            const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
+            console.log(`Trip duration: ${duration} days`);
+            
+            // Call APIs in parallel with proper error handling
+            console.log('Calling APIs in parallel...');
             const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
                 getVisaData(tripData.nationality, tripData.destination),
-                getRecommendations(tripData.destination, null, tripData.tripType, this.calculateDuration(tripData.departureDate, tripData.returnDate), tripData.activities)
+                getRecommendations(tripData.destination, null, tripData.tripType, duration, tripData.activities)
             ]);
             
             // Process results
@@ -367,9 +421,12 @@ class TravelPackingApp {
             const visa = visaData.status === 'fulfilled' ? visaData.value : null;
             const recommendations = recommendationsData.status === 'fulfilled' ? recommendationsData.value : null;
             
+            console.log('API Results:', { weather, visa, recommendations });
+            
             // Store trip data
             this.currentTrip = {
                 ...tripData,
+                duration,
                 weather,
                 visa,
                 recommendations
@@ -399,9 +456,18 @@ class TravelPackingApp {
         const resultsSection = document.getElementById('results-section');
         const errorSection = document.getElementById('error-section');
         
-        if (loadingSection) loadingSection.style.display = 'block';
-        if (resultsSection) resultsSection.style.display = 'none';
-        if (errorSection) errorSection.style.display = 'none';
+        if (loadingSection) {
+            loadingSection.classList.remove('hidden');
+            loadingSection.style.display = 'block';
+        }
+        if (resultsSection) {
+            resultsSection.classList.add('hidden');
+            resultsSection.style.display = 'none';
+        }
+        if (errorSection) {
+            errorSection.classList.add('hidden');
+            errorSection.style.display = 'none';
+        }
         
         // Animate progress bar
         this.animateProgressBar();
@@ -422,25 +488,33 @@ class TravelPackingApp {
     }
 
     displayResults() {
+        console.log('Displaying results...');
+        
         const loadingSection = document.getElementById('loading-section');
         const resultsSection = document.getElementById('results-section');
         const errorSection = document.getElementById('error-section');
         
-        if (loadingSection) loadingSection.style.display = 'none';
-        if (resultsSection) resultsSection.style.display = 'block';
-        if (errorSection) errorSection.style.display = 'none';
+        if (loadingSection) {
+            loadingSection.classList.add('hidden');
+            loadingSection.style.display = 'none';
+        }
+        if (resultsSection) {
+            resultsSection.classList.remove('hidden');
+            resultsSection.style.display = 'block';
+        }
+        if (errorSection) {
+            errorSection.classList.add('hidden');
+            errorSection.style.display = 'none';
+        }
         
-        // Update trip overview
+        // Update all sections
         this.updateTripOverview();
-        
-        // Update weather section
         this.updateWeatherSection();
-        
-        // Update visa section
         this.updateVisaSection();
-        
-        // Update checklist
         this.updateChecklist();
+        
+        // Scroll to results
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     updateTripOverview() {
@@ -453,14 +527,18 @@ class TravelPackingApp {
         }
         
         if (tripDetails) {
-            const duration = this.calculateDuration(trip.departureDate, trip.returnDate);
-            tripDetails.textContent = `${trip.departureDate} - ${trip.returnDate} • ${duration} days • ${trip.tripType}`;
+            tripDetails.textContent = `${trip.departureDate} - ${trip.returnDate} • ${trip.duration} days • ${trip.tripType}`;
         }
     }
 
     updateWeatherSection() {
         const weatherSection = document.querySelector('.weather-info');
-        if (!weatherSection || !this.currentTrip.weather) return;
+        if (!weatherSection) return;
+        
+        if (!this.currentTrip.weather) {
+            weatherSection.innerHTML = '<p>Weather data unavailable</p>';
+            return;
+        }
         
         const weather = this.currentTrip.weather;
         weatherSection.innerHTML = `
@@ -487,7 +565,12 @@ class TravelPackingApp {
 
     updateVisaSection() {
         const visaSection = document.querySelector('.visa-info');
-        if (!visaSection || !this.currentTrip.visa) return;
+        if (!visaSection) return;
+        
+        if (!this.currentTrip.visa) {
+            visaSection.innerHTML = '<p>Visa information unavailable</p>';
+            return;
+        }
         
         const visa = this.currentTrip.visa;
         const statusClass = visa.visaStatus ? visa.visaStatus.replace('_', '-') : 'unknown';
@@ -571,6 +654,21 @@ class TravelPackingApp {
         this.updateProgress();
     }
 
+    toggleAllItems(checked) {
+        const items = document.querySelectorAll('.checklist-item');
+        items.forEach(item => {
+            const checkbox = item.querySelector('.item-checkbox');
+            if (checked) {
+                checkbox.classList.add('checked');
+                item.classList.add('checked');
+            } else {
+                checkbox.classList.remove('checked');
+                item.classList.remove('checked');
+            }
+        });
+        this.updateProgress();
+    }
+
     updateProgress() {
         const totalItems = document.querySelectorAll('.checklist-item').length;
         const packedItems = document.querySelectorAll('.checklist-item.checked').length;
@@ -596,9 +694,16 @@ class TravelPackingApp {
         const resultsSection = document.getElementById('results-section');
         const errorSection = document.getElementById('error-section');
         
-        if (loadingSection) loadingSection.style.display = 'none';
-        if (resultsSection) resultsSection.style.display = 'none';
+        if (loadingSection) {
+            loadingSection.classList.add('hidden');
+            loadingSection.style.display = 'none';
+        }
+        if (resultsSection) {
+            resultsSection.classList.add('hidden');
+            resultsSection.style.display = 'none';
+        }
         if (errorSection) {
+            errorSection.classList.remove('hidden');
             errorSection.style.display = 'block';
             const errorMessage = errorSection.querySelector('p');
             if (errorMessage) {
@@ -626,9 +731,7 @@ class TravelPackingApp {
             // Create toast element
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <span>${message}</span>
-            `;
+            toast.innerHTML = `<span>${message}</span>`;
 
             // Add to container
             toastContainer.appendChild(toast);
