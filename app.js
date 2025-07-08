@@ -2,7 +2,7 @@
 // API Configuration
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
-// COMPREHENSIVE MAJOR CITIES DATABASE
+// COMPREHENSIVE MAJOR CITIES DATABASE (Including Hong Kong)
 const MAJOR_CITIES = [
     // North America
     { city: "New York", country: "United States", region: "North America", weatherName: "New York" },
@@ -61,7 +61,7 @@ const MAJOR_CITIES = [
     { city: "Moscow", country: "Russia", region: "Europe/Asia", weatherName: "Moscow" },
     { city: "St. Petersburg", country: "Russia", region: "Europe", weatherName: "Saint Petersburg" },
     
-    // Asia
+    // Asia (Enhanced with Hong Kong)
     { city: "Tokyo", country: "Japan", region: "Asia", weatherName: "Tokyo" },
     { city: "Osaka", country: "Japan", region: "Asia", weatherName: "Osaka" },
     { city: "Kyoto", country: "Japan", region: "Asia", weatherName: "Kyoto" },
@@ -70,6 +70,7 @@ const MAJOR_CITIES = [
     { city: "Beijing", country: "China", region: "Asia", weatherName: "Beijing" },
     { city: "Shanghai", country: "China", region: "Asia", weatherName: "Shanghai" },
     { city: "Hong Kong", country: "Hong Kong", region: "Asia", weatherName: "Hong Kong" },
+    { city: "Macao", country: "Macao", region: "Asia", weatherName: "Macao" },
     { city: "Singapore", country: "Singapore", region: "Asia", weatherName: "Singapore" },
     { city: "Bangkok", country: "Thailand", region: "Asia", weatherName: "Bangkok" },
     { city: "Phuket", country: "Thailand", region: "Asia", weatherName: "Phuket" },
@@ -207,7 +208,7 @@ const ALL_NATIONALITIES = [
     "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
     "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
     "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
-    "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+    "Lithuania", "Luxembourg", "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
     "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
     "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
     "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
@@ -219,15 +220,17 @@ const ALL_NATIONALITIES = [
     "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-// API Functions
+// ENHANCED API Functions with better city/country mapping
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
-        // Find city data to get proper weather name
+        // Enhanced city data lookup with better parsing
         const cityData = MAJOR_CITIES.find(city => 
-            city.city === destination || `${city.city}, ${city.country}` === destination
+            city.city === destination || 
+            `${city.city}, ${city.country}` === destination ||
+            destination.toLowerCase().includes(city.city.toLowerCase())
         );
         
-        const weatherLocation = cityData ? cityData.weatherName : destination;
+        const weatherLocation = cityData ? cityData.weatherName : extractCityFromDestination(destination);
         console.log(`Weather lookup: ${destination} → ${weatherLocation}`);
         
         const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(weatherLocation)}&departureDate=${departureDate}&returnDate=${returnDate}`);
@@ -261,12 +264,14 @@ async function getWeatherData(destination, departureDate, returnDate) {
 
 async function getVisaData(nationality, destination) {
     try {
-        // Find city data to extract country for visa lookup
+        // Enhanced city data lookup with better parsing for visa country extraction
         const cityData = MAJOR_CITIES.find(city => 
-            city.city === destination || `${city.city}, ${city.country}` === destination
+            city.city === destination || 
+            `${city.city}, ${city.country}` === destination ||
+            destination.toLowerCase().includes(city.city.toLowerCase())
         );
         
-        const visaDestination = cityData ? cityData.country : destination;
+        const visaDestination = cityData ? cityData.country : extractCountryFromDestination(destination);
         console.log(`Visa lookup: ${nationality} → ${destination} (${visaDestination})`);
         
         const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(visaDestination)}`);
@@ -287,6 +292,24 @@ async function getVisaData(nationality, destination) {
             stayDuration: 'Check embassy guidelines'
         };
     }
+}
+
+// Enhanced city/country extraction functions
+function extractCityFromDestination(destination) {
+    if (destination.includes(',')) {
+        // Handle "Tokyo, Japan" format - extract city
+        return destination.split(',')[0].trim();
+    }
+    return destination;
+}
+
+function extractCountryFromDestination(destination) {
+    if (destination.includes(',')) {
+        // Handle "Tokyo, Japan" format - extract country
+        const parts = destination.split(',').map(part => part.trim());
+        return parts[parts.length - 1];
+    }
+    return destination;
 }
 
 async function getRecommendations(destination, weather, tripType, duration, activities) {
@@ -322,7 +345,6 @@ class TravelPackingApp {
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
         this.isGenerating = false;
-        this.filteredCities = MAJOR_CITIES;
 
         this.packingCategories = {
             documents: {
@@ -399,7 +421,6 @@ class TravelPackingApp {
         this.setupEventListeners();
         this.populateCountryDropdown();
         this.populateDestinationDropdown();
-        this.setupDestinationSelector();
         this.setMinDates();
         this.loadSavedProgress();
         console.log('App initialized successfully');
@@ -536,102 +557,6 @@ class TravelPackingApp {
         }
     }
 
-    // FIXED: Better destination selector that maintains dropdown functionality
-    setupDestinationSelector() {
-        try {
-            const searchInput = document.getElementById('destination-search');
-            const dropdown = document.getElementById('destination');
-            const suggestionsList = document.getElementById('destination-suggestions');
-
-            if (!searchInput || !dropdown || !suggestionsList) return;
-
-            // BOTH elements should be visible and functional
-            searchInput.style.display = 'block';
-            dropdown.style.display = 'block';
-
-            // Search input functionality
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                
-                // Clear dropdown selection when typing
-                dropdown.value = '';
-                
-                if (query.length < 2) {
-                    suggestionsList.classList.remove('show');
-                    return;
-                }
-
-                // Filter cities based on search query
-                const matches = MAJOR_CITIES.filter(city => 
-                    city.city.toLowerCase().includes(query) ||
-                    city.country.toLowerCase().includes(query) ||
-                    `${city.city}, ${city.country}`.toLowerCase().includes(query)
-                ).slice(0, 8); // Limit to 8 results
-
-                if (matches.length > 0) {
-                    suggestionsList.innerHTML = matches.map(city => 
-                        `<div class="suggestion-item" onclick="app.selectDestination('${city.city}, ${city.country}')">
-                            <div class="suggestion-main">${city.city}</div>
-                            <div class="suggestion-sub">${city.country} • ${city.region}</div>
-                        </div>`
-                    ).join('');
-                    suggestionsList.classList.add('show');
-                } else {
-                    suggestionsList.innerHTML = '<div class="suggestion-item no-results">No destinations found</div>';
-                    suggestionsList.classList.add('show');
-                }
-            });
-
-            // Dropdown change functionality
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    // Update search input to match selection
-                    searchInput.value = e.target.value;
-                    suggestionsList.classList.remove('show');
-                    this.showToast(`Selected: ${e.target.value}`, 'success');
-                }
-            });
-
-            // Clear search when dropdown is used
-            dropdown.addEventListener('focus', () => {
-                suggestionsList.classList.remove('show');
-            });
-
-            // Hide suggestions when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && 
-                    !suggestionsList.contains(e.target) && 
-                    !dropdown.contains(e.target)) {
-                    suggestionsList.classList.remove('show');
-                }
-            });
-
-            console.log('Destination selector setup complete');
-        } catch (error) {
-            console.error('Error setting up destination selector:', error);
-        }
-    }
-
-    selectDestination(destination) {
-        const searchInput = document.getElementById('destination-search');
-        const dropdown = document.getElementById('destination');
-        const suggestionsList = document.getElementById('destination-suggestions');
-        
-        if (searchInput && dropdown) {
-            // Update both input and dropdown
-            searchInput.value = destination;
-            dropdown.value = destination;
-            
-            // Hide suggestions
-            if (suggestionsList) {
-                suggestionsList.classList.remove('show');
-            }
-            
-            // Show success message
-            this.showToast(`Selected: ${destination}`, 'success');
-        }
-    }
-
     setMinDates() {
         try {
             const today = new Date().toISOString().split('T')[0];
@@ -678,7 +603,7 @@ class TravelPackingApp {
         }
     }
 
-    // UPDATED: Main checklist generation with better destination handling
+    // SIMPLIFIED: Main checklist generation with dropdown-only destination handling
     async generateChecklist() {
         if (this.isGenerating) return;
         
@@ -692,21 +617,12 @@ class TravelPackingApp {
                 throw new Error('Travel form not found');
             }
             
-            // Get destination from either search input or dropdown (both should have same value)
-            const searchInput = document.getElementById('destination-search');
-            const dropdown = document.getElementById('destination');
-            const destinationValue = searchInput?.value?.trim() || dropdown?.value?.trim();
-            
-            if (!destinationValue) {
-                throw new Error('Please select a destination');
-            }
-            
-            // Create FormData from form
+            // Create FormData from form - simplified destination handling
             const formData = new FormData(form);
             
             // Extract and validate data
             const tripData = {
-                destination: destinationValue,
+                destination: formData.get('destination')?.trim(),
                 nationality: formData.get('nationality')?.trim(),
                 departureDate: formData.get('departure-date'),
                 returnDate: formData.get('return-date'),
