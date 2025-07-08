@@ -2,10 +2,211 @@
 // API Configuration
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
+// COMPREHENSIVE MAJOR CITIES DATABASE
+const MAJOR_CITIES = [
+    // North America
+    { city: "New York", country: "United States", region: "North America", weatherName: "New York" },
+    { city: "Los Angeles", country: "United States", region: "North America", weatherName: "Los Angeles" },
+    { city: "Chicago", country: "United States", region: "North America", weatherName: "Chicago" },
+    { city: "Miami", country: "United States", region: "North America", weatherName: "Miami" },
+    { city: "Las Vegas", country: "United States", region: "North America", weatherName: "Las Vegas" },
+    { city: "San Francisco", country: "United States", region: "North America", weatherName: "San Francisco" },
+    { city: "Washington DC", country: "United States", region: "North America", weatherName: "Washington" },
+    { city: "Boston", country: "United States", region: "North America", weatherName: "Boston" },
+    { city: "Seattle", country: "United States", region: "North America", weatherName: "Seattle" },
+    { city: "Toronto", country: "Canada", region: "North America", weatherName: "Toronto" },
+    { city: "Vancouver", country: "Canada", region: "North America", weatherName: "Vancouver" },
+    { city: "Montreal", country: "Canada", region: "North America", weatherName: "Montreal" },
+    { city: "Mexico City", country: "Mexico", region: "North America", weatherName: "Mexico City" },
+    { city: "Cancun", country: "Mexico", region: "North America", weatherName: "Cancun" },
+    
+    // Europe
+    { city: "London", country: "United Kingdom", region: "Europe", weatherName: "London" },
+    { city: "Paris", country: "France", region: "Europe", weatherName: "Paris" },
+    { city: "Rome", country: "Italy", region: "Europe", weatherName: "Rome" },
+    { city: "Berlin", country: "Germany", region: "Europe", weatherName: "Berlin" },
+    { city: "Madrid", country: "Spain", region: "Europe", weatherName: "Madrid" },
+    { city: "Barcelona", country: "Spain", region: "Europe", weatherName: "Barcelona" },
+    { city: "Amsterdam", country: "Netherlands", region: "Europe", weatherName: "Amsterdam" },
+    { city: "Vienna", country: "Austria", region: "Europe", weatherName: "Vienna" },
+    { city: "Prague", country: "Czech Republic", region: "Europe", weatherName: "Prague" },
+    { city: "Budapest", country: "Hungary", region: "Europe", weatherName: "Budapest" },
+    { city: "Warsaw", country: "Poland", region: "Europe", weatherName: "Warsaw" },
+    { city: "Stockholm", country: "Sweden", region: "Europe", weatherName: "Stockholm" },
+    { city: "Copenhagen", country: "Denmark", region: "Europe", weatherName: "Copenhagen" },
+    { city: "Oslo", country: "Norway", region: "Europe", weatherName: "Oslo" },
+    { city: "Helsinki", country: "Finland", region: "Europe", weatherName: "Helsinki" },
+    { city: "Brussels", country: "Belgium", region: "Europe", weatherName: "Brussels" },
+    { city: "Zurich", country: "Switzerland", region: "Europe", weatherName: "Zurich" },
+    { city: "Geneva", country: "Switzerland", region: "Europe", weatherName: "Geneva" },
+    { city: "Milan", country: "Italy", region: "Europe", weatherName: "Milan" },
+    { city: "Florence", country: "Italy", region: "Europe", weatherName: "Florence" },
+    { city: "Venice", country: "Italy", region: "Europe", weatherName: "Venice" },
+    { city: "Naples", country: "Italy", region: "Europe", weatherName: "Naples" },
+    { city: "Nice", country: "France", region: "Europe", weatherName: "Nice" },
+    { city: "Marseille", country: "France", region: "Europe", weatherName: "Marseille" },
+    { city: "Lyon", country: "France", region: "Europe", weatherName: "Lyon" },
+    { city: "Munich", country: "Germany", region: "Europe", weatherName: "Munich" },
+    { city: "Hamburg", country: "Germany", region: "Europe", weatherName: "Hamburg" },
+    { city: "Frankfurt", country: "Germany", region: "Europe", weatherName: "Frankfurt" },
+    { city: "Cologne", country: "Germany", region: "Europe", weatherName: "Cologne" },
+    { city: "Edinburgh", country: "United Kingdom", region: "Europe", weatherName: "Edinburgh" },
+    { city: "Manchester", country: "United Kingdom", region: "Europe", weatherName: "Manchester" },
+    { city: "Dublin", country: "Ireland", region: "Europe", weatherName: "Dublin" },
+    { city: "Lisbon", country: "Portugal", region: "Europe", weatherName: "Lisbon" },
+    { city: "Porto", country: "Portugal", region: "Europe", weatherName: "Porto" },
+    { city: "Athens", country: "Greece", region: "Europe", weatherName: "Athens" },
+    { city: "Santorini", country: "Greece", region: "Europe", weatherName: "Santorini" },
+    { city: "Istanbul", country: "Turkey", region: "Europe/Asia", weatherName: "Istanbul" },
+    { city: "Moscow", country: "Russia", region: "Europe/Asia", weatherName: "Moscow" },
+    { city: "St. Petersburg", country: "Russia", region: "Europe", weatherName: "Saint Petersburg" },
+    
+    // Asia
+    { city: "Tokyo", country: "Japan", region: "Asia", weatherName: "Tokyo" },
+    { city: "Osaka", country: "Japan", region: "Asia", weatherName: "Osaka" },
+    { city: "Kyoto", country: "Japan", region: "Asia", weatherName: "Kyoto" },
+    { city: "Seoul", country: "South Korea", region: "Asia", weatherName: "Seoul" },
+    { city: "Busan", country: "South Korea", region: "Asia", weatherName: "Busan" },
+    { city: "Beijing", country: "China", region: "Asia", weatherName: "Beijing" },
+    { city: "Shanghai", country: "China", region: "Asia", weatherName: "Shanghai" },
+    { city: "Hong Kong", country: "Hong Kong", region: "Asia", weatherName: "Hong Kong" },
+    { city: "Singapore", country: "Singapore", region: "Asia", weatherName: "Singapore" },
+    { city: "Bangkok", country: "Thailand", region: "Asia", weatherName: "Bangkok" },
+    { city: "Phuket", country: "Thailand", region: "Asia", weatherName: "Phuket" },
+    { city: "Chiang Mai", country: "Thailand", region: "Asia", weatherName: "Chiang Mai" },
+    { city: "Kuala Lumpur", country: "Malaysia", region: "Asia", weatherName: "Kuala Lumpur" },
+    { city: "Manila", country: "Philippines", region: "Asia", weatherName: "Manila" },
+    { city: "Cebu", country: "Philippines", region: "Asia", weatherName: "Cebu" },
+    { city: "Jakarta", country: "Indonesia", region: "Asia", weatherName: "Jakarta" },
+    { city: "Bali", country: "Indonesia", region: "Asia", weatherName: "Denpasar" },
+    { city: "Ho Chi Minh City", country: "Vietnam", region: "Asia", weatherName: "Ho Chi Minh City" },
+    { city: "Hanoi", country: "Vietnam", region: "Asia", weatherName: "Hanoi" },
+    { city: "Mumbai", country: "India", region: "Asia", weatherName: "Mumbai" },
+    { city: "Delhi", country: "India", region: "Asia", weatherName: "New Delhi" },
+    { city: "Bangalore", country: "India", region: "Asia", weatherName: "Bangalore" },
+    { city: "Chennai", country: "India", region: "Asia", weatherName: "Chennai" },
+    { city: "Kolkata", country: "India", region: "Asia", weatherName: "Kolkata" },
+    { city: "Goa", country: "India", region: "Asia", weatherName: "Panaji" },
+    { city: "Jaipur", country: "India", region: "Asia", weatherName: "Jaipur" },
+    { city: "Agra", country: "India", region: "Asia", weatherName: "Agra" },
+    { city: "Kathmandu", country: "Nepal", region: "Asia", weatherName: "Kathmandu" },
+    { city: "Colombo", country: "Sri Lanka", region: "Asia", weatherName: "Colombo" },
+    { city: "Dhaka", country: "Bangladesh", region: "Asia", weatherName: "Dhaka" },
+    { city: "Islamabad", country: "Pakistan", region: "Asia", weatherName: "Islamabad" },
+    { city: "Karachi", country: "Pakistan", region: "Asia", weatherName: "Karachi" },
+    { city: "Lahore", country: "Pakistan", region: "Asia", weatherName: "Lahore" },
+    { city: "Kabul", country: "Afghanistan", region: "Asia", weatherName: "Kabul" },
+    { city: "Tashkent", country: "Uzbekistan", region: "Asia", weatherName: "Tashkent" },
+    { city: "Almaty", country: "Kazakhstan", region: "Asia", weatherName: "Almaty" },
+    
+    // Middle East
+    { city: "Dubai", country: "UAE", region: "Middle East", weatherName: "Dubai" },
+    { city: "Abu Dhabi", country: "UAE", region: "Middle East", weatherName: "Abu Dhabi" },
+    { city: "Doha", country: "Qatar", region: "Middle East", weatherName: "Doha" },
+    { city: "Kuwait City", country: "Kuwait", region: "Middle East", weatherName: "Kuwait" },
+    { city: "Riyadh", country: "Saudi Arabia", region: "Middle East", weatherName: "Riyadh" },
+    { city: "Jeddah", country: "Saudi Arabia", region: "Middle East", weatherName: "Jeddah" },
+    { city: "Mecca", country: "Saudi Arabia", region: "Middle East", weatherName: "Mecca" },
+    { city: "Tehran", country: "Iran", region: "Middle East", weatherName: "Tehran" },
+    { city: "Baghdad", country: "Iraq", region: "Middle East", weatherName: "Baghdad" },
+    { city: "Damascus", country: "Syria", region: "Middle East", weatherName: "Damascus" },
+    { city: "Beirut", country: "Lebanon", region: "Middle East", weatherName: "Beirut" },
+    { city: "Amman", country: "Jordan", region: "Middle East", weatherName: "Amman" },
+    { city: "Jerusalem", country: "Israel", region: "Middle East", weatherName: "Jerusalem" },
+    { city: "Tel Aviv", country: "Israel", region: "Middle East", weatherName: "Tel Aviv" },
+    { city: "Ankara", country: "Turkey", region: "Middle East", weatherName: "Ankara" },
+    
+    // Africa
+    { city: "Cairo", country: "Egypt", region: "Africa", weatherName: "Cairo" },
+    { city: "Alexandria", country: "Egypt", region: "Africa", weatherName: "Alexandria" },
+    { city: "Cape Town", country: "South Africa", region: "Africa", weatherName: "Cape Town" },
+    { city: "Johannesburg", country: "South Africa", region: "Africa", weatherName: "Johannesburg" },
+    { city: "Durban", country: "South Africa", region: "Africa", weatherName: "Durban" },
+    { city: "Lagos", country: "Nigeria", region: "Africa", weatherName: "Lagos" },
+    { city: "Abuja", country: "Nigeria", region: "Africa", weatherName: "Abuja" },
+    { city: "Nairobi", country: "Kenya", region: "Africa", weatherName: "Nairobi" },
+    { city: "Mombasa", country: "Kenya", region: "Africa", weatherName: "Mombasa" },
+    { city: "Dar es Salaam", country: "Tanzania", region: "Africa", weatherName: "Dar es Salaam" },
+    { city: "Addis Ababa", country: "Ethiopia", region: "Africa", weatherName: "Addis Ababa" },
+    { city: "Accra", country: "Ghana", region: "Africa", weatherName: "Accra" },
+    { city: "Dakar", country: "Senegal", region: "Africa", weatherName: "Dakar" },
+    { city: "Casablanca", country: "Morocco", region: "Africa", weatherName: "Casablanca" },
+    { city: "Marrakech", country: "Morocco", region: "Africa", weatherName: "Marrakech" },
+    { city: "Rabat", country: "Morocco", region: "Africa", weatherName: "Rabat" },
+    { city: "Tunis", country: "Tunisia", region: "Africa", weatherName: "Tunis" },
+    { city: "Algiers", country: "Algeria", region: "Africa", weatherName: "Algiers" },
+    { city: "Tripoli", country: "Libya", region: "Africa", weatherName: "Tripoli" },
+    { city: "Khartoum", country: "Sudan", region: "Africa", weatherName: "Khartoum" },
+    { city: "Kampala", country: "Uganda", region: "Africa", weatherName: "Kampala" },
+    { city: "Kigali", country: "Rwanda", region: "Africa", weatherName: "Kigali" },
+    { city: "Lusaka", country: "Zambia", region: "Africa", weatherName: "Lusaka" },
+    { city: "Harare", country: "Zimbabwe", region: "Africa", weatherName: "Harare" },
+    { city: "Gaborone", country: "Botswana", region: "Africa", weatherName: "Gaborone" },
+    { city: "Windhoek", country: "Namibia", region: "Africa", weatherName: "Windhoek" },
+    
+    // Oceania
+    { city: "Sydney", country: "Australia", region: "Oceania", weatherName: "Sydney" },
+    { city: "Melbourne", country: "Australia", region: "Oceania", weatherName: "Melbourne" },
+    { city: "Brisbane", country: "Australia", region: "Oceania", weatherName: "Brisbane" },
+    { city: "Perth", country: "Australia", region: "Oceania", weatherName: "Perth" },
+    { city: "Adelaide", country: "Australia", region: "Oceania", weatherName: "Adelaide" },
+    { city: "Canberra", country: "Australia", region: "Oceania", weatherName: "Canberra" },
+    { city: "Auckland", country: "New Zealand", region: "Oceania", weatherName: "Auckland" },
+    { city: "Wellington", country: "New Zealand", region: "Oceania", weatherName: "Wellington" },
+    { city: "Christchurch", country: "New Zealand", region: "Oceania", weatherName: "Christchurch" },
+    { city: "Suva", country: "Fiji", region: "Oceania", weatherName: "Suva" },
+    { city: "Port Moresby", country: "Papua New Guinea", region: "Oceania", weatherName: "Port Moresby" },
+    
+    // South America
+    { city: "São Paulo", country: "Brazil", region: "South America", weatherName: "São Paulo" },
+    { city: "Rio de Janeiro", country: "Brazil", region: "South America", weatherName: "Rio de Janeiro" },
+    { city: "Brasília", country: "Brazil", region: "South America", weatherName: "Brasília" },
+    { city: "Salvador", country: "Brazil", region: "South America", weatherName: "Salvador" },
+    { city: "Recife", country: "Brazil", region: "South America", weatherName: "Recife" },
+    { city: "Buenos Aires", country: "Argentina", region: "South America", weatherName: "Buenos Aires" },
+    { city: "Córdoba", country: "Argentina", region: "South America", weatherName: "Córdoba" },
+    { city: "Santiago", country: "Chile", region: "South America", weatherName: "Santiago" },
+    { city: "Valparaíso", country: "Chile", region: "South America", weatherName: "Valparaíso" },
+    { city: "Lima", country: "Peru", region: "South America", weatherName: "Lima" },
+    { city: "Cusco", country: "Peru", region: "South America", weatherName: "Cusco" },
+    { city: "Bogotá", country: "Colombia", region: "South America", weatherName: "Bogotá" },
+    { city: "Medellín", country: "Colombia", region: "South America", weatherName: "Medellín" },
+    { city: "Cartagena", country: "Colombia", region: "South America", weatherName: "Cartagena" },
+    { city: "Caracas", country: "Venezuela", region: "South America", weatherName: "Caracas" },
+    { city: "Quito", country: "Ecuador", region: "South America", weatherName: "Quito" },
+    { city: "Guayaquil", country: "Ecuador", region: "South America", weatherName: "Guayaquil" },
+    { city: "La Paz", country: "Bolivia", region: "South America", weatherName: "La Paz" },
+    { city: "Santa Cruz", country: "Bolivia", region: "South America", weatherName: "Santa Cruz de la Sierra" },
+    { city: "Asunción", country: "Paraguay", region: "South America", weatherName: "Asunción" },
+    { city: "Montevideo", country: "Uruguay", region: "South America", weatherName: "Montevideo" },
+    { city: "Georgetown", country: "Guyana", region: "South America", weatherName: "Georgetown" },
+    { city: "Paramaribo", country: "Suriname", region: "South America", weatherName: "Paramaribo" },
+    { city: "Cayenne", country: "French Guiana", region: "South America", weatherName: "Cayenne" },
+    
+    // Caribbean
+    { city: "Havana", country: "Cuba", region: "Caribbean", weatherName: "Havana" },
+    { city: "Kingston", country: "Jamaica", region: "Caribbean", weatherName: "Kingston" },
+    { city: "San Juan", country: "Puerto Rico", region: "Caribbean", weatherName: "San Juan" },
+    { city: "Santo Domingo", country: "Dominican Republic", region: "Caribbean", weatherName: "Santo Domingo" },
+    { city: "Port-au-Prince", country: "Haiti", region: "Caribbean", weatherName: "Port-au-Prince" },
+    { city: "Nassau", country: "Bahamas", region: "Caribbean", weatherName: "Nassau" },
+    { city: "Bridgetown", country: "Barbados", region: "Caribbean", weatherName: "Bridgetown" },
+    { city: "Port of Spain", country: "Trinidad and Tobago", region: "Caribbean", weatherName: "Port of Spain" },
+    { city: "St. George's", country: "Grenada", region: "Caribbean", weatherName: "St. George's" }
+];
+
 // API Functions
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
-        const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
+        // Find city data to get proper weather name
+        const cityData = MAJOR_CITIES.find(city => 
+            city.city === destination || `${city.city}, ${city.country}` === destination
+        );
+        
+        const weatherLocation = cityData ? cityData.weatherName : destination;
+        console.log(`Weather lookup: ${destination} → ${weatherLocation}`);
+        
+        const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(weatherLocation)}&departureDate=${departureDate}&returnDate=${returnDate}`);
         
         if (!response.ok) {
             throw new Error(`Weather API returned ${response.status}`);
@@ -36,7 +237,15 @@ async function getWeatherData(destination, departureDate, returnDate) {
 
 async function getVisaData(nationality, destination) {
     try {
-        const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`);
+        // Find city data to extract country for visa lookup
+        const cityData = MAJOR_CITIES.find(city => 
+            city.city === destination || `${city.city}, ${city.country}` === destination
+        );
+        
+        const visaDestination = cityData ? cityData.country : destination;
+        console.log(`Visa lookup: ${nationality} → ${destination} (${visaDestination})`);
+        
+        const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(visaDestination)}`);
         
         if (!response.ok) {
             throw new Error(`Visa API returned ${response.status}`);
@@ -89,14 +298,11 @@ class TravelPackingApp {
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
         this.isGenerating = false;
+        this.filteredCities = MAJOR_CITIES;
 
-        // Sample data for countries and destinations
+        // Sample data for countries
         this.countries = [
             "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "South Korea", "China", "India", "Brazil", "Mexico", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", "Switzerland", "Austria", "New Zealand", "Singapore", "Hong Kong", "South Africa", "UAE", "Saudi Arabia", "Russia", "Turkey", "Greece", "Portugal"
-        ];
-
-        this.sampleDestinations = [
-            "Paris, France", "Tokyo, Japan", "New York, USA", "London, UK", "Sydney, Australia", "Rome, Italy", "Barcelona, Spain", "Amsterdam, Netherlands"
         ];
 
         this.packingCategories = {
@@ -173,7 +379,8 @@ class TravelPackingApp {
         this.loadSavedTheme();
         this.setupEventListeners();
         this.populateCountryDropdown();
-        this.setupDestinationSuggestions();
+        this.populateDestinationDropdown();
+        this.setupDestinationSearch();
         this.setMinDates();
         this.loadSavedProgress();
         console.log('App initialized successfully');
@@ -267,54 +474,140 @@ class TravelPackingApp {
         }
     }
 
-    setupDestinationSuggestions() {
+    populateDestinationDropdown() {
         try {
-            const input = document.getElementById('destination');
+            const select = document.getElementById('destination');
+            if (select) {
+                // Group cities by region for better organization
+                const regions = {};
+                MAJOR_CITIES.forEach(city => {
+                    if (!regions[city.region]) {
+                        regions[city.region] = [];
+                    }
+                    regions[city.region].push(city);
+                });
+
+                // Sort regions and cities
+                Object.keys(regions).sort().forEach(region => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = region;
+                    
+                    regions[region].sort((a, b) => a.city.localeCompare(b.city)).forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = `${city.city}, ${city.country}`;
+                        option.textContent = `${city.city}, ${city.country}`;
+                        option.setAttribute('data-country', city.country);
+                        option.setAttribute('data-region', city.region);
+                        optgroup.appendChild(option);
+                    });
+                    
+                    select.appendChild(optgroup);
+                });
+            }
+        } catch (error) {
+            console.error('Error populating destination dropdown:', error);
+        }
+    }
+
+    setupDestinationSearch() {
+        try {
+            const searchInput = document.getElementById('destination-search');
+            const dropdown = document.getElementById('destination');
             const suggestionsList = document.getElementById('destination-suggestions');
 
-            if (!input || !suggestionsList) return;
+            if (!searchInput || !dropdown || !suggestionsList) return;
 
-            input.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
+            // Initially hide dropdown and show search
+            dropdown.style.display = 'none';
+            
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                
                 if (query.length < 2) {
                     suggestionsList.classList.remove('show');
                     return;
                 }
 
-                const matches = this.sampleDestinations.filter(dest => 
-                    dest.toLowerCase().includes(query)
-                );
+                // Filter cities based on search query
+                const matches = MAJOR_CITIES.filter(city => 
+                    city.city.toLowerCase().includes(query) ||
+                    city.country.toLowerCase().includes(query) ||
+                    `${city.city}, ${city.country}`.toLowerCase().includes(query)
+                ).slice(0, 8); // Limit to 8 results
 
                 if (matches.length > 0) {
-                    suggestionsList.innerHTML = matches.map(dest => 
-                        `<div class="suggestion-item" onclick="app.selectDestination('${dest}')">${dest}</div>`
+                    suggestionsList.innerHTML = matches.map(city => 
+                        `<div class="suggestion-item" onclick="app.selectDestination('${city.city}, ${city.country}')">
+                            <div class="suggestion-main">${city.city}</div>
+                            <div class="suggestion-sub">${city.country} • ${city.region}</div>
+                        </div>`
                     ).join('');
                     suggestionsList.classList.add('show');
                 } else {
-                    suggestionsList.classList.remove('show');
+                    suggestionsList.innerHTML = '<div class="suggestion-item no-results">No destinations found</div>';
+                    suggestionsList.classList.add('show');
+                }
+            });
+
+            // Show dropdown on focus if no search query
+            searchInput.addEventListener('focus', (e) => {
+                if (!e.target.value.trim()) {
+                    dropdown.style.display = 'block';
+                    searchInput.style.display = 'none';
+                    dropdown.focus();
+                }
+            });
+
+            // Switch from dropdown to search when typing
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    this.selectDestination(e.target.value);
                 }
             });
 
             // Hide suggestions when clicking outside
             document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
+                if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
                     suggestionsList.classList.remove('show');
                 }
             });
+
+            // Switch between search and dropdown modes
+            searchInput.addEventListener('blur', (e) => {
+                // Small delay to allow for suggestion click
+                setTimeout(() => {
+                    if (!searchInput.value.trim()) {
+                        searchInput.style.display = 'none';
+                        dropdown.style.display = 'block';
+                    }
+                }, 150);
+            });
+
         } catch (error) {
-            console.error('Error setting up destination suggestions:', error);
+            console.error('Error setting up destination search:', error);
         }
     }
 
     selectDestination(destination) {
-        const input = document.getElementById('destination');
+        const searchInput = document.getElementById('destination-search');
+        const dropdown = document.getElementById('destination');
         const suggestionsList = document.getElementById('destination-suggestions');
         
-        if (input) {
-            input.value = destination;
-        }
-        if (suggestionsList) {
-            suggestionsList.classList.remove('show');
+        if (searchInput && dropdown) {
+            searchInput.value = destination;
+            dropdown.value = destination;
+            
+            // Hide suggestions
+            if (suggestionsList) {
+                suggestionsList.classList.remove('show');
+            }
+            
+            // Show the selection clearly
+            searchInput.style.display = 'block';
+            dropdown.style.display = 'none';
+            
+            // Show success message
+            this.showToast(`Selected: ${destination}`, 'success');
         }
     }
 
@@ -364,7 +657,7 @@ class TravelPackingApp {
         }
     }
 
-    // FIXED: Main checklist generation method
+    // UPDATED: Main checklist generation method with city handling
     async generateChecklist() {
         if (this.isGenerating) return;
         
@@ -378,12 +671,21 @@ class TravelPackingApp {
                 throw new Error('Travel form not found');
             }
             
+            // Get destination from either search input or dropdown
+            const searchInput = document.getElementById('destination-search');
+            const dropdown = document.getElementById('destination');
+            const destinationValue = searchInput?.value?.trim() || dropdown?.value?.trim();
+            
+            if (!destinationValue) {
+                throw new Error('Please select a destination');
+            }
+            
             // Create FormData from form
             const formData = new FormData(form);
             
             // Extract and validate data
             const tripData = {
-                destination: formData.get('destination')?.trim(),
+                destination: destinationValue,
                 nationality: formData.get('nationality')?.trim(),
                 departureDate: formData.get('departure-date'),
                 returnDate: formData.get('return-date'),
@@ -408,7 +710,7 @@ class TravelPackingApp {
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
             console.log(`Trip duration: ${duration} days`);
             
-            // FIXED: Get weather and visa data first
+            // Get weather and visa data
             console.log('Fetching weather and visa data...');
             const [weatherResult, visaResult] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
@@ -421,11 +723,11 @@ class TravelPackingApp {
             console.log('Weather data:', weather);
             console.log('Visa data:', visa);
             
-            // FIXED: Now get recommendations with weather data
+            // Get recommendations with weather data
             console.log('Getting recommendations with weather data...');
             const recommendations = await getRecommendations(
                 tripData.destination, 
-                weather, // Pass actual weather data
+                weather,
                 tripData.tripType, 
                 duration, 
                 tripData.activities

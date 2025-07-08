@@ -48,14 +48,20 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="destination" class="form-label">Destination *</label>
-                                        <div style="position: relative;">
-                                            <input type="text" 
-                                                   id="destination" 
-                                                   name="destination" 
-                                                   class="form-control" 
-                                                   placeholder="e.g., Tokyo, Japan" 
-                                                   required 
-                                                   autocomplete="off">
+                                        <div class="destination-selector">
+                                            <input 
+                                                type="text" 
+                                                id="destination-search" 
+                                                class="form-control destination-search" 
+                                                placeholder="Search or select a city..." 
+                                                autocomplete="off">
+                                            <select 
+                                                id="destination" 
+                                                name="destination" 
+                                                class="form-control destination-dropdown" 
+                                                required>
+                                                <option value="">Select your destination</option>
+                                            </select>
                                             <div id="destination-suggestions" class="suggestions-list"></div>
                                         </div>
                                     </div>
