@@ -1,164 +1,15 @@
 const axios = require('axios');
 
-// In-memory cache for API responses (survives for function lifetime)
+// In-memory cache for API responses only
 const apiCache = new Map();
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
 // Rate limiting tracking
 const rateLimitTracker = {
   lastCall: 0,
   callCount: 0,
   resetTime: 0,
-  minInterval: 2000 // Minimum 2 seconds between API calls
-};
-
-// ENHANCED fallback database with Hong Kong support
-const COMPREHENSIVE_FALLBACK_DATABASE = {
-  'United States': {
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Italy': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Spain': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Netherlands': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'New Zealand': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (NZeTA) required' },
-    'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Macao': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Brazil': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-    'Mexico': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'China': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
-    'India': { status: 'e_visa', duration: '30 days', message: 'e-Tourist visa available online' },
-    'Russia': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
-    'UAE': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Turkey': { status: 'e_visa', duration: '90 days', message: 'e-Visa required (apply online)' }
-  },
-  
-  'United Kingdom': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '180 days', message: 'No visa required (British National connection)' },
-    'Macao': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit, 90 days per 180)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit, 90 days per 180)' },
-    'Italy': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit, 90 days per 180)' },
-    'Spain': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit, 90 days per 180)' },
-    'Netherlands': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit, 90 days per 180)' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'New Zealand': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-    'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Brazil': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-    'China': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
-    'India': { status: 'e_visa', duration: '30 days', message: 'e-Tourist visa available online' },
-    'Russia': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
-    'UAE': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Turkey': { status: 'e_visa', duration: '90 days', message: 'e-Visa required (apply online)' }
-  },
-  
-  'Canada': {
-    'United States': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'New Zealand': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-    'Mexico': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' }
-  },
-  
-  'Australia': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'New Zealand': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (Trans-Tasman agreement)' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-  },
-  
-  'Germany': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'France': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (EU citizen)' },
-    'Italy': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (EU citizen)' },
-    'Spain': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (EU citizen)' },
-    'Netherlands': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (EU citizen)' }
-  },
-  
-  'Japan': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-  },
-
-  // ADDED: Hong Kong as nationality
-  'Hong Kong': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required (British National connection)' },
-    'Canada': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Italy': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Spain': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Netherlands': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'China': { status: 'visa_free', duration: '7 days', message: 'No visa required for short visits (Hong Kong SAR passport)' },
-    'Macao': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (Special Administrative Region)' },
-    'Taiwan': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-  },
-
-  // ADDED: Macao as nationality
-  'Macao': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Canada': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (Special Administrative Region)' },
-    'China': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (Special Administrative Region)' },
-    'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-  },
-
-  // ADDED: Singapore with Hong Kong
-  'Singapore': {
-    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
-    'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-    'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-    'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-    'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-    'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' }
-  }
+  minInterval: 1000 // Minimum 1 second between API calls
 };
 
 exports.handler = async (event, context) => {
@@ -184,7 +35,7 @@ exports.handler = async (event, context) => {
   try {
     const { nationality, destination } = event.queryStringParameters || {};
     
-    console.log('========== SMART VISA CHECK ==========');
+    console.log('========== API-ONLY VISA CHECK ==========');
     console.log(`Request: ${nationality} → ${destination}`);
 
     if (!nationality || !destination) {
@@ -200,81 +51,75 @@ exports.handler = async (event, context) => {
     const cacheKey = `${cleanNationality}-${cleanDestination}`;
     
     console.log(`Cleaned: ${cleanNationality} → ${cleanDestination}`);
-    console.log(`Cache key: ${cacheKey}`);
 
     // STEP 1: Check cache first
     const cachedResult = getCachedResult(cacheKey);
     if (cachedResult) {
-      console.log('✅ Returning cached result');
+      console.log('✅ Returning cached API result');
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           ...cachedResult,
           cached: true,
-          timestamp: new Date().toISOString(),
-          note: 'Cached result to avoid rate limits'
+          timestamp: new Date().toISOString()
         }),
       };
     }
 
-    // STEP 2: Check comprehensive fallback database
-    console.log('🗄️ Checking comprehensive database...');
-    const normalizedNationality = normalizeCountryName(cleanNationality);
-    const normalizedDestination = normalizeCountryName(cleanDestination);
-    
-    console.log(`Normalized: ${normalizedNationality} → ${normalizedDestination}`);
-    
-    const databaseResult = getFallbackData(normalizedNationality, normalizedDestination);
-    if (databaseResult) {
-      console.log('✅ Found in comprehensive database:', databaseResult);
-      const result = {
-        nationality: nationality,
-        destination: destination,
-        visaStatus: databaseResult.status,
-        visaMessage: databaseResult.message,
-        additionalInfo: getAdditionalInfo(databaseResult.status),
-        stayDuration: databaseResult.duration,
-        requirements: getRequirements(databaseResult.status),
-        cached: false,
-        timestamp: new Date().toISOString(),
-        source: 'comprehensive_database'
-      };
-      
-      // Cache the result
-      setCacheResult(cacheKey, result);
-      return { statusCode: 200, headers, body: JSON.stringify(result) };
-    } else {
-      console.log('❌ Not found in database');
+    // STEP 2: API-ONLY - No database fallbacks
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+    if (!RAPIDAPI_KEY) {
+      throw new Error('RapidAPI key not configured');
     }
 
-    // STEP 3: Try API if rate limits allow (with better error handling)
-    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-    if (RAPIDAPI_KEY && canMakeAPICall()) {
-      console.log('🚀 Attempting rate-limited API call...');
-      
+    if (!canMakeAPICall()) {
+      console.log('⏱️ Rate limited - temporary delay');
+      return {
+        statusCode: 429,
+        headers,
+        body: JSON.stringify({
+          nationality: nationality,
+          destination: destination,
+          visaStatus: 'rate_limited',
+          visaMessage: 'Service temporarily busy - please try again in a moment',
+          additionalInfo: 'API rate limit reached. Please wait before making another request.',
+          stayDuration: 'Please retry',
+          requirements: ['Wait and retry'],
+          cached: false,
+          timestamp: new Date().toISOString(),
+          source: 'rate_limit'
+        }),
+      };
+    }
+
+    console.log('🚀 Making API call to RapidAPI...');
+    
+    // Update rate limit tracker
+    updateRateLimitTracker();
+    
+    // Try multiple API parameter formats for better compatibility
+    const apiFormats = [
+      { from: cleanNationality, to: cleanDestination },
+      { from: getAPICountryName(cleanNationality), to: getAPICountryName(cleanDestination) },
+      { from: getAlternateCountryName(cleanNationality), to: getAlternateCountryName(cleanDestination) }
+    ];
+    
+    let lastError = null;
+    
+    for (const [index, format] of apiFormats.entries()) {
       try {
-        // Update rate limit tracker
-        updateRateLimitTracker();
-        
-        // Try different API parameter formats for special territories
-        const apiNationality = getAPICountryName(cleanNationality);
-        const apiDestination = getAPICountryName(cleanDestination);
-        
-        console.log(`API call with: ${apiNationality} → ${apiDestination}`);
+        console.log(`API attempt ${index + 1}: ${format.from} → ${format.to}`);
         
         const visaResponse = await axios.get(
           'https://visa-requirements.p.rapidapi.com/visa-requirements',
           {
-            params: {
-              from: apiNationality,
-              to: apiDestination
-            },
+            params: format,
             headers: {
               'X-RapidAPI-Key': RAPIDAPI_KEY,
               'X-RapidAPI-Host': 'visa-requirements.p.rapidapi.com'
             },
-            timeout: 10000
+            timeout: 15000
           }
         );
 
@@ -283,124 +128,116 @@ exports.handler = async (event, context) => {
         
         const processedVisa = processRapidAPIResponse(visaResponse.data);
         
-        if (processedVisa.status !== 'unknown') {
-          const result = {
-            nationality: nationality,
-            destination: destination,
-            visaStatus: processedVisa.status,
-            visaMessage: processedVisa.message,
-            additionalInfo: processedVisa.additionalInfo,
-            stayDuration: processedVisa.duration,
-            requirements: getRequirements(processedVisa.status),
-            cached: false,
-            timestamp: new Date().toISOString(),
-            source: 'rapidapi_live'
-          };
-          
-          // Cache successful API result
-          setCacheResult(cacheKey, result);
-          return { statusCode: 200, headers, body: JSON.stringify(result) };
-        }
+        const result = {
+          nationality: nationality,
+          destination: destination,
+          visaStatus: processedVisa.status,
+          visaMessage: processedVisa.message,
+          additionalInfo: processedVisa.additionalInfo,
+          stayDuration: processedVisa.duration,
+          requirements: getRequirements(processedVisa.status),
+          cached: false,
+          timestamp: new Date().toISOString(),
+          source: 'rapidapi_live',
+          apiFormat: `${format.from} → ${format.to}`
+        };
+        
+        // Cache successful API result
+        setCacheResult(cacheKey, result);
+        return { statusCode: 200, headers, body: JSON.stringify(result) };
         
       } catch (apiError) {
-        console.error('❌ API Error:', apiError.response?.status, apiError.message);
-        console.error('API Error Details:', apiError.response?.data);
+        console.log(`API format ${index + 1} failed:`, apiError.response?.status, apiError.message);
+        lastError = apiError;
         
-        // Handle specific rate limit errors
-        if (apiError.response?.status === 429) {
-          console.log('⏱️ Rate limited - using database fallback');
-          rateLimitTracker.resetTime = Date.now() + (60 * 1000); // Block for 1 minute
-        } else if (apiError.response?.status === 404) {
-          console.log('🔍 404 Error - API doesn\'t recognize country combination');
-        } else if (apiError.response?.status === 401) {
-          console.log('🔑 401 Error - API authentication failed');
+        // If this is a 404, try next format
+        if (apiError.response?.status === 404) {
+          continue;
         }
+        
+        // If it's a rate limit error, stop trying
+        if (apiError.response?.status === 429) {
+          rateLimitTracker.resetTime = Date.now() + (60 * 1000);
+          break;
+        }
+        
+        // For other errors, continue to next format
+        continue;
       }
-    } else {
-      console.log('⏸️ Skipping API call due to rate limits or missing key');
-    }
-
-    // STEP 4: Enhanced smart estimation
-    console.log('🧠 Using enhanced smart estimation...');
-    const smartResult = getEnhancedSmartEstimation(normalizedNationality, normalizedDestination);
-    
-    const result = {
-      nationality: nationality,
-      destination: destination,
-      visaStatus: smartResult.status,
-      visaMessage: smartResult.message,
-      additionalInfo: smartResult.additionalInfo,
-      stayDuration: smartResult.duration,
-      requirements: getRequirements(smartResult.status),
-      cached: false,
-      timestamp: new Date().toISOString(),
-      source: 'smart_estimation',
-      confidence: smartResult.confidence
-    };
-    
-    // Cache smart estimation if high confidence
-    if (smartResult.confidence > 0.8) {
-      setCacheResult(cacheKey, result);
     }
     
-    return { statusCode: 200, headers, body: JSON.stringify(result) };
-
-  } catch (error) {
-    console.error('Fatal error:', error);
+    // All API formats failed
+    console.error('❌ All API formats failed. Last error:', lastError?.response?.status, lastError?.message);
+    
+    // Return proper error response
+    const errorStatus = lastError?.response?.status;
+    let errorMessage = 'Unable to retrieve visa information';
+    let errorInfo = 'Please check with embassy for current requirements.';
+    
+    if (errorStatus === 404) {
+      errorMessage = 'Country combination not supported by visa service';
+      errorInfo = 'This nationality or destination may not be supported by our visa information service.';
+    } else if (errorStatus === 401) {
+      errorMessage = 'Visa service authentication failed';
+      errorInfo = 'There is an issue with our visa information service.';
+    } else if (errorStatus === 429) {
+      errorMessage = 'Visa service temporarily busy';
+      errorInfo = 'Please try again in a few minutes.';
+    }
+    
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
+        nationality: nationality,
+        destination: destination,
+        visaStatus: 'api_error',
+        visaMessage: errorMessage,
+        additionalInfo: errorInfo,
+        stayDuration: 'Contact embassy',
+        requirements: ['Check embassy website', 'Verify current requirements'],
+        cached: false,
+        timestamp: new Date().toISOString(),
+        source: 'api_error',
+        errorCode: errorStatus
+      }),
+    };
+
+  } catch (error) {
+    console.error('Fatal error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
         nationality: event.queryStringParameters?.nationality || 'Unknown',
         destination: event.queryStringParameters?.destination || 'Unknown',
-        visaStatus: 'unknown',
-        visaMessage: 'Service temporarily unavailable',
-        additionalInfo: 'Please check with embassy for current requirements.',
+        visaStatus: 'service_error',
+        visaMessage: 'Visa service temporarily unavailable',
+        additionalInfo: 'Our visa information service is currently unavailable. Please try again later.',
         stayDuration: 'Contact embassy',
         requirements: ['Check embassy website'],
         cached: false,
         timestamp: new Date().toISOString(),
-        source: 'error_fallback'
+        source: 'service_error'
       }),
     };
   }
 };
 
-// Enhanced country cleaning for city/country combinations
+// Enhanced country cleaning for new format
 function cleanCountryName(country) {
   if (!country) return '';
   
   let cleaned = country.trim();
   
-  // Handle "City, Country" format - extract country
+  // Handle "Country, City" format - extract country
   if (cleaned.includes(',')) {
     const parts = cleaned.split(',').map(part => part.trim());
-    cleaned = parts[parts.length - 1];
+    cleaned = parts[0]; // Take first part (country) in new format
     console.log(`Extracted country from "${country}": "${cleaned}"`);
   }
   
   return cleaned;
-}
-
-function normalizeCountryName(country) {
-  const normalizations = {
-    'usa': 'United States',
-    'us': 'United States', 
-    'america': 'United States',
-    'uk': 'United Kingdom',
-    'britain': 'United Kingdom',
-    'england': 'United Kingdom',
-    'korea': 'South Korea',
-    'south korea': 'South Korea',
-    'hk': 'Hong Kong',
-    'hong kong sar': 'Hong Kong',
-    'macau': 'Macao',
-    'macao sar': 'Macao'
-  };
-  
-  const result = normalizations[country.toLowerCase()] || country;
-  console.log(`Normalized "${country}" → "${result}"`);
-  return result;
 }
 
 // Convert country names to API-friendly format
@@ -408,12 +245,30 @@ function getAPICountryName(country) {
   const apiMappings = {
     'Hong Kong': 'Hong Kong SAR China',
     'Macao': 'Macao SAR China',
-    'United States': 'United States',
-    'United Kingdom': 'United Kingdom', 
-    'South Korea': 'South Korea'
+    'United States': 'United States of America',
+    'United Kingdom': 'United Kingdom',
+    'South Korea': 'Korea, South',
+    'North Korea': 'Korea, North',
+    'Czech Republic': 'Czechia',
+    'UAE': 'United Arab Emirates'
   };
   
   return apiMappings[country] || country;
+}
+
+// Alternative country names for API compatibility
+function getAlternateCountryName(country) {
+  const alternateMappings = {
+    'Hong Kong': 'Hong Kong',
+    'Macao': 'Macau',
+    'United States': 'USA',
+    'United Kingdom': 'UK',
+    'South Korea': 'South Korea',
+    'Czech Republic': 'Czech Republic',
+    'UAE': 'UAE'
+  };
+  
+  return alternateMappings[country] || country;
 }
 
 // Cache management functions
@@ -423,7 +278,7 @@ function getCachedResult(cacheKey) {
     return cached.data;
   }
   if (cached) {
-    apiCache.delete(cacheKey); // Remove expired cache
+    apiCache.delete(cacheKey);
   }
   return null;
 }
@@ -434,8 +289,8 @@ function setCacheResult(cacheKey, data) {
     timestamp: Date.now()
   });
   
-  // Prevent memory leaks - limit cache size
-  if (apiCache.size > 100) {
+  // Prevent memory leaks
+  if (apiCache.size > 200) {
     const firstKey = apiCache.keys().next().value;
     apiCache.delete(firstKey);
   }
@@ -445,12 +300,10 @@ function setCacheResult(cacheKey, data) {
 function canMakeAPICall() {
   const now = Date.now();
   
-  // Check if we're in a rate limit timeout
   if (rateLimitTracker.resetTime > now) {
     return false;
   }
   
-  // Check minimum interval between calls
   if ((now - rateLimitTracker.lastCall) < rateLimitTracker.minInterval) {
     return false;
   }
@@ -464,122 +317,68 @@ function updateRateLimitTracker() {
   rateLimitTracker.callCount++;
   
   // Reset counters every hour
-  if (rateLimitTracker.callCount > 50) {
-    rateLimitTracker.resetTime = now + (60 * 60 * 1000); // Block for 1 hour
+  if (rateLimitTracker.callCount > 100) {
+    rateLimitTracker.resetTime = now + (60 * 60 * 1000);
     rateLimitTracker.callCount = 0;
   }
 }
 
-function getFallbackData(nationality, destination) {
-  // Direct exact match
-  if (COMPREHENSIVE_FALLBACK_DATABASE[nationality] && COMPREHENSIVE_FALLBACK_DATABASE[nationality][destination]) {
-    console.log(`✅ Direct match: ${nationality} → ${destination}`);
-    return COMPREHENSIVE_FALLBACK_DATABASE[nationality][destination];
-  }
-  
-  // Try case-insensitive matches
-  for (const [dbNationality, destinations] of Object.entries(COMPREHENSIVE_FALLBACK_DATABASE)) {
-    if (nationality.toLowerCase() === dbNationality.toLowerCase()) {
-      console.log(`Found nationality match: ${dbNationality}`);
-      for (const [dbDestination, info] of Object.entries(destinations)) {
-        if (destination.toLowerCase() === dbDestination.toLowerCase()) {
-          console.log(`✅ Case-insensitive match: ${dbDestination}`);
-          return info;
-        }
-      }
-    }
-  }
-  
-  console.log(`❌ No database match for: ${nationality} → ${destination}`);
-  return null;
-}
-
 function processRapidAPIResponse(visaData) {
   let status = 'unknown';
-  let message = 'Check with embassy';
+  let message = 'Check visa requirements with embassy';
   let duration = 'Varies';
   let additionalInfo = '';
 
-  const visaRequirement = visaData.visa_requirement || visaData.status || visaData.result;
+  // Handle different response formats from RapidAPI
+  const visaRequirement = visaData.visa_requirement || visaData.status || visaData.result || visaData.visa_status;
   
   if (typeof visaRequirement === 'string') {
-    const requirement = visaRequirement.toLowerCase();
+    const requirement = visaRequirement.toLowerCase().trim();
     
-    if (requirement.includes('visa free') || requirement.includes('no visa required')) {
+    if (requirement.includes('visa free') || requirement.includes('no visa required') || requirement.includes('visa not required')) {
       status = 'visa_free';
-      message = 'No visa required for short stays';
-      duration = visaData.max_stay || '90 days';
-      additionalInfo = 'Visa-free entry for tourism/business purposes.';
-    } else if (requirement.includes('visa required')) {
+      message = 'No visa required for tourism/business';
+      duration = visaData.max_stay || visaData.duration || '90 days';
+      additionalInfo = 'Visa-free entry for short-term visits.';
+    } else if (requirement.includes('visa required') || requirement.includes('visa is required')) {
       status = 'visa_required';
-      message = 'Visa required before travel';
-      additionalInfo = 'Apply for visa at embassy/consulate before departure.';
-    } else if (requirement.includes('e-visa') || requirement.includes('electronic')) {
+      message = 'Tourist visa required before travel';
+      duration = visaData.max_stay || visaData.duration || 'Varies';
+      additionalInfo = 'Apply for tourist visa at embassy/consulate before departure.';
+    } else if (requirement.includes('e-visa') || requirement.includes('electronic visa') || requirement.includes('evisa')) {
       status = 'e_visa';
-      message = 'Electronic visa available online';
-      additionalInfo = 'Apply online for e-visa before travel.';
-    } else if (requirement.includes('visa on arrival')) {
+      message = 'Electronic visa required (apply online)';
+      duration = visaData.max_stay || visaData.duration || '30 days';
+      additionalInfo = 'Apply for e-visa online before travel.';
+    } else if (requirement.includes('visa on arrival') || requirement.includes('arrival visa')) {
       status = 'visa_on_arrival';
       message = 'Visa available on arrival';
-      duration = visaData.max_stay || '30 days';
+      duration = visaData.max_stay || visaData.duration || '30 days';
       additionalInfo = 'Visa can be obtained at port of entry.';
+    } else if (requirement.includes('covid') || requirement.includes('suspended') || requirement.includes('restricted')) {
+      status = 'restricted';
+      message = 'Travel restrictions in place';
+      duration = 'Check current status';
+      additionalInfo = 'Special restrictions may apply. Check latest travel advisories.';
     }
   }
 
-  return { status, message, duration, additionalInfo: additionalInfo || getAdditionalInfo(status) };
-}
-
-function getEnhancedSmartEstimation(nationality, destination) {
-  const euCountries = ['Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Austria', 'Belgium', 'Portugal'];
-  const powerfulPassports = ['United States', 'United Kingdom', 'Canada', 'Australia', 'New Zealand', 'Japan', 'Singapore', 'Hong Kong'];
-  
-  // Special case: Hong Kong
-  if (nationality === 'Hong Kong') {
-    return {
-      status: 'visa_free',
-      message: 'Likely no visa required (Hong Kong SAR passport)',
-      duration: '30-90 days',
-      additionalInfo: 'Hong Kong SAR passport typically allows visa-free travel to many destinations.',
-      confidence: 0.85
-    };
-  }
-  
-  if (euCountries.includes(nationality) && euCountries.includes(destination)) {
-    return {
-      status: 'visa_free',
-      message: 'No visa required (EU/Schengen area)',
-      duration: 'Indefinite',
-      additionalInfo: 'Free movement within EU/Schengen area.',
-      confidence: 0.95
-    };
-  }
-  
-  if (powerfulPassports.includes(nationality)) {
-    return {
-      status: 'visa_free',
-      message: 'Likely no visa required for short stays',
-      duration: '30-90 days',
-      additionalInfo: 'Strong passport typically allows visa-free travel.',
-      confidence: 0.8
-    };
-  }
-  
-  return {
-    status: 'unknown',
-    message: 'Visa requirements vary - check with embassy',
-    duration: 'Check embassy guidelines',
-    additionalInfo: 'Unable to determine requirements reliably. Please verify with official sources.',
-    confidence: 0.4
+  return { 
+    status, 
+    message, 
+    duration, 
+    additionalInfo: additionalInfo || getAdditionalInfo(status) 
   };
 }
 
 function getAdditionalInfo(visaStatus) {
   const infoMap = {
     'visa_free': 'No visa required for short-term tourism or business visits. Ensure passport validity of at least 6 months.',
-    'visa_required': 'Visa must be obtained before travel. Apply at embassy/consulate with sufficient processing time.',
+    'visa_required': 'Tourist visa must be obtained before travel. Apply at embassy/consulate with sufficient processing time.',
     'e_visa': 'Electronic visa can be applied for online. Print approval and carry during travel.',
     'visa_on_arrival': 'Visa can be obtained at the port of entry. Have required documents and fees ready.',
-    'unknown': 'Visa requirements change frequently. Always verify current requirements with official sources.'
+    'restricted': 'Travel may be restricted or suspended. Check latest travel advisories.',
+    'unknown': 'Visa requirements could not be determined. Please verify with official sources.'
   };
   
   return infoMap[visaStatus] || infoMap['unknown'];
@@ -595,26 +394,34 @@ function getRequirements(visaStatus) {
     ],
     'visa_required': [
       'Valid passport (6+ months validity)',
-      'Completed visa application',
+      'Completed visa application form',
       'Recent passport photos',
-      'Visa fee payment',
-      'Supporting documents'
+      'Visa application fee',
+      'Supporting documents (bank statements, etc.)'
     ],
     'e_visa': [
       'Valid passport (6+ months validity)',
       'Digital passport photo',
       'Online application',
-      'Credit card for payment'
+      'Credit card for payment',
+      'Email for approval receipt'
     ],
     'visa_on_arrival': [
       'Valid passport (6+ months validity)',
-      'Passport photos',
-      'Visa fee (cash)',
-      'Return ticket'
+      'Passport photos (2-3 pieces)',
+      'Visa fee (cash in local currency)',
+      'Return ticket',
+      'Proof of accommodation'
+    ],
+    'restricted': [
+      'Check latest travel advisories',
+      'Contact embassy for current status',
+      'May require special permissions'
     ],
     'unknown': [
       'Valid passport',
-      'Check embassy requirements'
+      'Check embassy requirements',
+      'Verify current travel restrictions'
     ]
   };
   
