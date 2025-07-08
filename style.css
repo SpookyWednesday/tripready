@@ -1430,4 +1430,27 @@ select.form-control {
     right: var(--space-12);
     max-width: none;
   }
+  .toast.info {
+  background: rgba(var(--color-info-rgb), 0.95);
+  color: white;
+}
+
+.toast.info::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Add missing visa status style */
+.visa-status.unknown {
+  color: var(--color-text-secondary);
+}
+
+/* Fix visa requirement layout */
+.visa-requirement {
+  display: flex;
+  flex-direction: column; /* Changed from row to column */
+  gap: var(--space-8);
+  padding: var(--space-12);
+  background: var(--color-secondary);
+  border-radius: var(--radius-base);
+}
 }
