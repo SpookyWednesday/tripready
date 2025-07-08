@@ -364,7 +364,7 @@ class TravelPackingApp {
         }
     }
 
-    // MAIN API INTEGRATION METHOD - THE KEY FIX
+    // FIXED: Main checklist generation method
     async generateChecklist() {
         if (this.isGenerating) return;
         
@@ -408,20 +408,30 @@ class TravelPackingApp {
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
             console.log(`Trip duration: ${duration} days`);
             
-            // Call APIs in parallel with proper error handling
-            console.log('Calling APIs in parallel...');
-            const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
+            // FIXED: Get weather and visa data first
+            console.log('Fetching weather and visa data...');
+            const [weatherResult, visaResult] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
-                getVisaData(tripData.nationality, tripData.destination),
-                getRecommendations(tripData.destination, null, tripData.tripType, duration, tripData.activities)
+                getVisaData(tripData.nationality, tripData.destination)
             ]);
             
-            // Process results
-            const weather = weatherData.status === 'fulfilled' ? weatherData.value : null;
-            const visa = visaData.status === 'fulfilled' ? visaData.value : null;
-            const recommendations = recommendationsData.status === 'fulfilled' ? recommendationsData.value : null;
+            const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+            const visa = visaResult.status === 'fulfilled' ? visaResult.value : null;
             
-            console.log('API Results:', { weather, visa, recommendations });
+            console.log('Weather data:', weather);
+            console.log('Visa data:', visa);
+            
+            // FIXED: Now get recommendations with weather data
+            console.log('Getting recommendations with weather data...');
+            const recommendations = await getRecommendations(
+                tripData.destination, 
+                weather, // Pass actual weather data
+                tripData.tripType, 
+                duration, 
+                tripData.activities
+            );
+            
+            console.log('Recommendations:', recommendations);
             
             // Store trip data
             this.currentTrip = {
@@ -476,6 +486,7 @@ class TravelPackingApp {
     animateProgressBar() {
         const progressFill = document.querySelector('.progress-fill');
         if (progressFill) {
+            progressFill.style.width = '0%';
             let width = 0;
             const interval = setInterval(() => {
                 width += 10;
@@ -494,27 +505,36 @@ class TravelPackingApp {
         const resultsSection = document.getElementById('results-section');
         const errorSection = document.getElementById('error-section');
         
-        if (loadingSection) {
-            loadingSection.classList.add('hidden');
-            loadingSection.style.display = 'none';
-        }
-        if (resultsSection) {
-            resultsSection.classList.remove('hidden');
-            resultsSection.style.display = 'block';
-        }
-        if (errorSection) {
-            errorSection.classList.add('hidden');
-            errorSection.style.display = 'none';
+        // Complete progress bar
+        const progressFill = document.querySelector('.progress-fill');
+        if (progressFill) {
+            progressFill.style.width = '100%';
         }
         
-        // Update all sections
-        this.updateTripOverview();
-        this.updateWeatherSection();
-        this.updateVisaSection();
-        this.updateChecklist();
-        
-        // Scroll to results
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Hide loading after a short delay
+        setTimeout(() => {
+            if (loadingSection) {
+                loadingSection.classList.add('hidden');
+                loadingSection.style.display = 'none';
+            }
+            if (resultsSection) {
+                resultsSection.classList.remove('hidden');
+                resultsSection.style.display = 'block';
+            }
+            if (errorSection) {
+                errorSection.classList.add('hidden');
+                errorSection.style.display = 'none';
+            }
+            
+            // Update all sections
+            this.updateTripOverview();
+            this.updateWeatherSection();
+            this.updateVisaSection();
+            this.updateChecklist();
+            
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
     }
 
     updateTripOverview() {
@@ -527,7 +547,9 @@ class TravelPackingApp {
         }
         
         if (tripDetails) {
-            tripDetails.textContent = `${trip.departureDate} - ${trip.returnDate} • ${trip.duration} days • ${trip.tripType}`;
+            const departure = new Date(trip.departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const returnDate = new Date(trip.returnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            tripDetails.textContent = `${departure} - ${returnDate} • ${trip.duration} days • ${trip.tripType}`;
         }
     }
 
@@ -536,30 +558,32 @@ class TravelPackingApp {
         if (!weatherSection) return;
         
         if (!this.currentTrip.weather) {
-            weatherSection.innerHTML = '<p>Weather data unavailable</p>';
+            weatherSection.innerHTML = '<p class="text-center">Weather data unavailable</p>';
             return;
         }
         
         const weather = this.currentTrip.weather;
         weatherSection.innerHTML = `
             <div class="weather-current">
-                <h4>Current Weather</h4>
+                <h4>Current Weather in ${weather.location?.name || this.currentTrip.destination}</h4>
                 <div class="weather-day">
                     <span class="weather-date">Now</span>
                     <span class="weather-temp">${weather.current.temperature}°C</span>
                     <span class="weather-desc">${weather.current.description}</span>
                 </div>
             </div>
-            <div class="weather-forecast">
-                <h4>5-Day Forecast</h4>
-                ${weather.forecast.map(day => `
-                    <div class="weather-day">
-                        <span class="weather-date">${day.date}</span>
-                        <span class="weather-temp">${day.temperature}°C</span>
-                        <span class="weather-desc">${day.description}</span>
-                    </div>
-                `).join('')}
-            </div>
+            ${weather.forecast && weather.forecast.length > 0 ? `
+                <div class="weather-forecast">
+                    <h4>5-Day Forecast</h4>
+                    ${weather.forecast.map(day => `
+                        <div class="weather-day">
+                            <span class="weather-date">${day.date}</span>
+                            <span class="weather-temp">${day.temperature}°C</span>
+                            <span class="weather-desc">${day.description}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
         `;
     }
 
@@ -568,12 +592,20 @@ class TravelPackingApp {
         if (!visaSection) return;
         
         if (!this.currentTrip.visa) {
-            visaSection.innerHTML = '<p>Visa information unavailable</p>';
+            visaSection.innerHTML = '<p class="text-center">Visa information unavailable</p>';
             return;
         }
         
         const visa = this.currentTrip.visa;
-        const statusClass = visa.visaStatus ? visa.visaStatus.replace('_', '-') : 'unknown';
+        // Map visa status to CSS classes
+        const statusClassMap = {
+            'visa_free': 'not-required',
+            'visa_required': 'required',
+            'e_visa': 'evisa',
+            'visa_on_arrival': 'evisa',
+            'unknown': 'unknown'
+        };
+        const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
         
         visaSection.innerHTML = `
             <div class="visa-requirement">
@@ -605,9 +637,9 @@ class TravelPackingApp {
                         <span class="category-count">${itemsCount} items</span>
                     </div>
                     <div class="checklist-items">
-                        ${category.items.map(item => `
-                            <div class="checklist-item" data-category="${categoryKey}" data-item="${item.name}">
-                                <div class="item-checkbox" onclick="app.toggleItem('${categoryKey}', '${item.name}')"></div>
+                        ${category.items.map((item, index) => `
+                            <div class="checklist-item" data-category="${categoryKey}" data-item="${item.name}" data-index="${index}">
+                                <div class="item-checkbox" onclick="app.toggleItem('${categoryKey}', '${item.name}', ${index})"></div>
                                 <div class="item-text">
                                     <div class="item-name">${item.name}</div>
                                     <div class="item-description">${item.description}</div>
@@ -623,20 +655,38 @@ class TravelPackingApp {
         
         // Update progress stats
         this.updateProgressStats(totalItems, 0);
+        
+        // Show toast with AI tip if available
+        if (this.currentTrip.recommendations?.aiTip) {
+            this.showToast(`AI Tip: ${this.currentTrip.recommendations.aiTip}`, 'info');
+        }
     }
 
     updateProgressStats(total, packed) {
-        const totalItems = document.querySelector('.stat-number');
-        const packedItems = document.querySelectorAll('.stat-number')[1];
-        const remainingItems = document.querySelectorAll('.stat-number')[2];
+        const stats = document.querySelectorAll('.stat-number');
+        if (stats.length >= 3) {
+            stats[0].textContent = total;
+            stats[1].textContent = packed;
+            stats[2].textContent = total - packed;
+        }
         
-        if (totalItems) totalItems.textContent = total;
-        if (packedItems) packedItems.textContent = packed;
-        if (remainingItems) remainingItems.textContent = total - packed;
+        // Update progress circle
+        const percentage = total > 0 ? Math.round((packed / total) * 100) : 0;
+        const progressPercentage = document.querySelector('.progress-percentage');
+        if (progressPercentage) {
+            progressPercentage.textContent = percentage + '%';
+        }
+        
+        // Update circular progress
+        const circleProgress = document.querySelector('.circle-progress');
+        if (circleProgress) {
+            const degrees = (percentage / 100) * 360;
+            circleProgress.style.background = `conic-gradient(white ${degrees}deg, rgba(255, 255, 255, 0.3) ${degrees}deg)`;
+        }
     }
 
-    toggleItem(category, itemName) {
-        const itemElement = document.querySelector(`[data-category="${category}"][data-item="${itemName}"]`);
+    toggleItem(category, itemName, index) {
+        const itemElement = document.querySelector(`[data-category="${category}"][data-item="${itemName}"][data-index="${index}"]`);
         if (!itemElement) return;
         
         const checkbox = itemElement.querySelector('.item-checkbox');
@@ -672,14 +722,6 @@ class TravelPackingApp {
     updateProgress() {
         const totalItems = document.querySelectorAll('.checklist-item').length;
         const packedItems = document.querySelectorAll('.checklist-item.checked').length;
-        const percentage = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0;
-        
-        // Update progress circle
-        const progressFill = document.querySelector('.progress-fill');
-        const progressPercentage = document.querySelector('.progress-percentage');
-        
-        if (progressFill) progressFill.style.width = percentage + '%';
-        if (progressPercentage) progressPercentage.textContent = percentage + '%';
         
         // Update stats
         this.updateProgressStats(totalItems, packedItems);
