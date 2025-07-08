@@ -163,31 +163,19 @@ const MAJOR_CITIES = [
     { city: "Montevideo", country: "Uruguay", region: "South America", weatherName: "Montevideo" }
 ];
 
-// COMPLETE NATIONALITY LIST - ALL RAPIDAPI SUPPORTED COUNTRIES (Alphabetical)
-const ALL_NATIONALITIES = [
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
-    "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
-    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
-    "Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
-    "Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
-    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
-    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
-    "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
-    "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
-    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
-    "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
-    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
-    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
-    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
-    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
-    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
-    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
-    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
-    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+// RAPIDAPI VERIFIED SUPPORTED COUNTRIES ONLY - Filtered Nationality List
+const RAPIDAPI_SUPPORTED_NATIONALITIES = [
+    "Argentina", "Australia", "Austria", "Bangladesh", "Belgium", "Brazil", "Bulgaria", "Canada", "Chile", "China",
+    "Colombia", "Croatia", "Czech Republic", "Denmark", "Ecuador", "Egypt", "Finland", "France", "Germany", "Ghana",
+    "Greece", "Hong Kong", "Hungary", "India", "Indonesia", "Iran", "Ireland", "Israel", "Italy", "Japan",
+    "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Lebanon", "Malaysia", "Mexico", "Morocco", "Nepal", "Netherlands",
+    "New Zealand", "Nigeria", "Norway", "Pakistan", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania",
+    "Russia", "Saudi Arabia", "Singapore", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland",
+    "Thailand", "Tunisia", "Turkey", "UAE", "Ukraine", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Venezuela", "Vietnam"
 ];
 
-// ENHANCED API Functions with better city/country mapping
+// REST OF THE APP.JS REMAINS THE SAME - just update populateCountryDropdown function
+
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
         // Enhanced city data lookup with better parsing for new format
@@ -253,10 +241,10 @@ async function getVisaData(nationality, destination) {
         return {
             nationality: nationality,
             destination: destination,
-            visaStatus: 'unknown',
-            visaMessage: 'Check with embassy - service temporarily unavailable',
-            additionalInfo: 'Please verify visa requirements with the embassy',
-            stayDuration: 'Check embassy guidelines'
+            visaStatus: 'service_error',
+            visaMessage: 'Visa service temporarily unavailable',
+            additionalInfo: 'Unable to retrieve visa information at this time',
+            stayDuration: 'Contact embassy'
         };
     }
 }
@@ -469,14 +457,14 @@ class TravelPackingApp {
         try {
             const select = document.getElementById('nationality');
             if (select) {
-                // Use complete nationality list and sort alphabetically
-                ALL_NATIONALITIES.forEach(country => {
+                // Use ONLY RapidAPI supported nationalities and sort alphabetically
+                RAPIDAPI_SUPPORTED_NATIONALITIES.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country;
                     option.textContent = country;
                     select.appendChild(option);
                 });
-                console.log(`Populated ${ALL_NATIONALITIES.length} nationalities`);
+                console.log(`Populated ${RAPIDAPI_SUPPORTED_NATIONALITIES.length} RapidAPI-supported nationalities`);
             }
         } catch (error) {
             console.error('Error populating country dropdown:', error);
@@ -517,7 +505,7 @@ class TravelPackingApp {
                     
                     select.appendChild(optgroup);
                 });
-                console.log(`Populated ${MAJOR_CITIES.length} destinations in new format`);
+                console.log(`Populated ${MAJOR_CITIES.length} destinations in Country, City format`);
             }
         } catch (error) {
             console.error('Error populating destination dropdown:', error);
@@ -809,6 +797,9 @@ class TravelPackingApp {
             'visa_required': 'required',
             'e_visa': 'evisa',
             'visa_on_arrival': 'evisa',
+            'api_error': 'unknown',
+            'service_error': 'unknown',
+            'rate_limited': 'unknown',
             'unknown': 'unknown'
         };
         const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
