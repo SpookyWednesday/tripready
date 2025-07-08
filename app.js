@@ -195,6 +195,30 @@ const MAJOR_CITIES = [
     { city: "St. George's", country: "Grenada", region: "Caribbean", weatherName: "St. George's" }
 ];
 
+// COMPLETE NATIONALITY LIST - ALL RAPIDAPI SUPPORTED COUNTRIES (Alphabetical)
+const ALL_NATIONALITIES = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+    "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
+    "Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
+    "Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
+    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
+    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+    "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
+    "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+    "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
+    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
+    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
+    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
+    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
+    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
+    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
 // API Functions
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
@@ -300,11 +324,6 @@ class TravelPackingApp {
         this.isGenerating = false;
         this.filteredCities = MAJOR_CITIES;
 
-        // Sample data for countries
-        this.countries = [
-            "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "South Korea", "China", "India", "Brazil", "Mexico", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", "Switzerland", "Austria", "New Zealand", "Singapore", "Hong Kong", "South Africa", "UAE", "Saudi Arabia", "Russia", "Turkey", "Greece", "Portugal"
-        ];
-
         this.packingCategories = {
             documents: {
                 name: "📄 Essential Documents",
@@ -380,7 +399,7 @@ class TravelPackingApp {
         this.setupEventListeners();
         this.populateCountryDropdown();
         this.populateDestinationDropdown();
-        this.setupDestinationSearch();
+        this.setupDestinationSelector();
         this.setMinDates();
         this.loadSavedProgress();
         console.log('App initialized successfully');
@@ -462,12 +481,14 @@ class TravelPackingApp {
         try {
             const select = document.getElementById('nationality');
             if (select) {
-                this.countries.forEach(country => {
+                // Use complete nationality list and sort alphabetically
+                ALL_NATIONALITIES.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country;
                     option.textContent = country;
                     select.appendChild(option);
                 });
+                console.log(`Populated ${ALL_NATIONALITIES.length} nationalities`);
             }
         } catch (error) {
             console.error('Error populating country dropdown:', error);
@@ -478,6 +499,11 @@ class TravelPackingApp {
         try {
             const select = document.getElementById('destination');
             if (select) {
+                // Clear existing options except the first one
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+
                 // Group cities by region for better organization
                 const regions = {};
                 MAJOR_CITIES.forEach(city => {
@@ -503,13 +529,15 @@ class TravelPackingApp {
                     
                     select.appendChild(optgroup);
                 });
+                console.log(`Populated ${MAJOR_CITIES.length} destinations`);
             }
         } catch (error) {
             console.error('Error populating destination dropdown:', error);
         }
     }
 
-    setupDestinationSearch() {
+    // FIXED: Better destination selector that maintains dropdown functionality
+    setupDestinationSelector() {
         try {
             const searchInput = document.getElementById('destination-search');
             const dropdown = document.getElementById('destination');
@@ -517,11 +545,16 @@ class TravelPackingApp {
 
             if (!searchInput || !dropdown || !suggestionsList) return;
 
-            // Initially hide dropdown and show search
-            dropdown.style.display = 'none';
-            
+            // BOTH elements should be visible and functional
+            searchInput.style.display = 'block';
+            dropdown.style.display = 'block';
+
+            // Search input functionality
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase().trim();
+                
+                // Clear dropdown selection when typing
+                dropdown.value = '';
                 
                 if (query.length < 2) {
                     suggestionsList.classList.remove('show');
@@ -549,42 +582,33 @@ class TravelPackingApp {
                 }
             });
 
-            // Show dropdown on focus if no search query
-            searchInput.addEventListener('focus', (e) => {
-                if (!e.target.value.trim()) {
-                    dropdown.style.display = 'block';
-                    searchInput.style.display = 'none';
-                    dropdown.focus();
+            // Dropdown change functionality
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    // Update search input to match selection
+                    searchInput.value = e.target.value;
+                    suggestionsList.classList.remove('show');
+                    this.showToast(`Selected: ${e.target.value}`, 'success');
                 }
             });
 
-            // Switch from dropdown to search when typing
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.selectDestination(e.target.value);
-                }
+            // Clear search when dropdown is used
+            dropdown.addEventListener('focus', () => {
+                suggestionsList.classList.remove('show');
             });
 
             // Hide suggestions when clicking outside
             document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                if (!searchInput.contains(e.target) && 
+                    !suggestionsList.contains(e.target) && 
+                    !dropdown.contains(e.target)) {
                     suggestionsList.classList.remove('show');
                 }
             });
 
-            // Switch between search and dropdown modes
-            searchInput.addEventListener('blur', (e) => {
-                // Small delay to allow for suggestion click
-                setTimeout(() => {
-                    if (!searchInput.value.trim()) {
-                        searchInput.style.display = 'none';
-                        dropdown.style.display = 'block';
-                    }
-                }, 150);
-            });
-
+            console.log('Destination selector setup complete');
         } catch (error) {
-            console.error('Error setting up destination search:', error);
+            console.error('Error setting up destination selector:', error);
         }
     }
 
@@ -594,6 +618,7 @@ class TravelPackingApp {
         const suggestionsList = document.getElementById('destination-suggestions');
         
         if (searchInput && dropdown) {
+            // Update both input and dropdown
             searchInput.value = destination;
             dropdown.value = destination;
             
@@ -601,10 +626,6 @@ class TravelPackingApp {
             if (suggestionsList) {
                 suggestionsList.classList.remove('show');
             }
-            
-            // Show the selection clearly
-            searchInput.style.display = 'block';
-            dropdown.style.display = 'none';
             
             // Show success message
             this.showToast(`Selected: ${destination}`, 'success');
@@ -657,7 +678,7 @@ class TravelPackingApp {
         }
     }
 
-    // UPDATED: Main checklist generation method with city handling
+    // UPDATED: Main checklist generation with better destination handling
     async generateChecklist() {
         if (this.isGenerating) return;
         
@@ -671,7 +692,7 @@ class TravelPackingApp {
                 throw new Error('Travel form not found');
             }
             
-            // Get destination from either search input or dropdown
+            // Get destination from either search input or dropdown (both should have same value)
             const searchInput = document.getElementById('destination-search');
             const dropdown = document.getElementById('destination');
             const destinationValue = searchInput?.value?.trim() || dropdown?.value?.trim();
