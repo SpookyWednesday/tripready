@@ -28,15 +28,15 @@ const VISA_DATABASE = {
   
   // UK Citizens
   'United Kingdom': {
-    'United States': { status: 'visa_free', duration: '90 days', message: 'ESTA authorization required' },
+    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
     'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
     'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
     'New Zealand': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (EU/Schengen)' },
-    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (EU/Schengen)' },
-    'Italy': { status: 'visa_free', duration: '90 days', message: 'No visa required (EU/Schengen)' },
-    'Spain': { status: 'visa_free', duration: '90 days', message: 'No visa required (EU/Schengen)' },
-    'Netherlands': { status: 'visa_free', duration: '90 days', message: 'No visa required (EU/Schengen)' },
+    'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit rules apply)' },
+    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit rules apply)' },
+    'Italy': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit rules apply)' },
+    'Spain': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit rules apply)' },
+    'Netherlands': { status: 'visa_free', duration: '90 days', message: 'No visa required (post-Brexit rules apply)' },
     'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
     'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
     'China': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
@@ -75,7 +75,7 @@ const VISA_DATABASE = {
   
   // Australian Citizens
   'Australia': {
-    'United States': { status: 'visa_free', duration: '90 days', message: 'ESTA authorization required' },
+    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
     'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
     'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
     'New Zealand': { status: 'visa_free', duration: 'Indefinite', message: 'No visa required (Trans-Tasman agreement)' },
@@ -98,7 +98,7 @@ const VISA_DATABASE = {
   
   // German Citizens (EU/Schengen)
   'Germany': {
-    'United States': { status: 'visa_free', duration: '90 days', message: 'ESTA authorization required' },
+    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
     'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
     'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
     'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
@@ -119,13 +119,14 @@ const VISA_DATABASE = {
     'Turkey': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' }
   },
   
-  // Add more countries as needed...
+  // Japanese Citizens
   'Japan': {
-    'United States': { status: 'visa_free', duration: '90 days', message: 'ESTA authorization required' },
+    'United States': { status: 'e_visa', duration: '90 days', message: 'ESTA authorization required' },
     'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
     'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
     'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
     'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
+    'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
     'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
     'China': { status: 'visa_required', duration: 'Varies', message: 'Tourist visa required before travel' },
     'India': { status: 'e_visa', duration: '30 days', message: 'e-Tourist visa available online' },
@@ -162,7 +163,7 @@ exports.handler = async (event, context) => {
   try {
     const { nationality, destination } = event.queryStringParameters || {};
     
-    console.log(`Visa check: ${nationality} to ${destination}`);
+    console.log(`Visa check request: ${nationality} to ${destination}`);
 
     if (!nationality || !destination) {
       return {
@@ -172,17 +173,17 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Clean and normalize country names
+    // FIXED: Improved country name normalization
     const normalizedNationality = normalizeCountryName(nationality);
     const normalizedDestination = normalizeCountryName(destination);
     
-    console.log(`Normalized: ${normalizedNationality} to ${normalizedDestination}`);
+    console.log(`Normalized: "${normalizedNationality}" to "${normalizedDestination}"`);
 
-    // Check our comprehensive database first
+    // FIXED: Enhanced database lookup with better matching
     const visaInfo = getVisaFromDatabase(normalizedNationality, normalizedDestination);
     
     if (visaInfo) {
-      console.log('Found visa info in database:', visaInfo);
+      console.log('✅ Found visa info in database:', visaInfo);
       return {
         statusCode: 200,
         headers,
@@ -200,6 +201,8 @@ exports.handler = async (event, context) => {
         }),
       };
     }
+
+    console.log('❌ No match found in database, trying fallbacks...');
 
     // Try RapidAPI as fallback (if API key available)
     const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
@@ -293,50 +296,112 @@ exports.handler = async (event, context) => {
   }
 };
 
+// FIXED: Improved normalization function
 function normalizeCountryName(country) {
   if (!country) return '';
   
-  // Handle common destination formats like "Paris, France"
+  // Remove extra whitespace and convert to proper case
+  country = country.trim();
+  
+  // Handle destination formats like "Paris, France" or "Tokyo, Japan"
   if (country.includes(',')) {
-    const parts = country.split(',');
-    country = parts[parts.length - 1].trim();
+    const parts = country.split(',').map(part => part.trim());
+    // Take the last part (usually the country)
+    country = parts[parts.length - 1];
   }
   
   // Normalize common country name variations
   const normalizations = {
+    // US variations
     'usa': 'United States',
     'us': 'United States',
     'america': 'United States',
+    'united states of america': 'United States',
+    
+    // UK variations
     'uk': 'United Kingdom',
     'britain': 'United Kingdom',
+    'great britain': 'United Kingdom',
     'england': 'United Kingdom',
+    'scotland': 'United Kingdom',
+    'wales': 'United Kingdom',
+    
+    // Other common variations
     'korea': 'South Korea',
+    'south korea': 'South Korea',
     'uae': 'UAE',
-    'emirates': 'UAE'
+    'emirates': 'UAE',
+    'united arab emirates': 'UAE',
+    
+    // European countries
+    'deutschland': 'Germany',
+    'holland': 'Netherlands',
+    
+    // Asian countries
+    'nippon': 'Japan',
+    'nihon': 'Japan'
   };
   
-  const normalized = normalizations[country.toLowerCase()] || country;
-  return normalized.trim();
+  const lowerCountry = country.toLowerCase();
+  const normalized = normalizations[lowerCountry] || country;
+  
+  // Convert to proper case (capitalize first letter of each word)
+  return normalized.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
 }
 
+// FIXED: Enhanced database lookup with better matching logic
 function getVisaFromDatabase(nationality, destination) {
-  // Check direct match
+  console.log(`🔍 Looking up: "${nationality}" → "${destination}"`);
+  
+  // Direct exact match first
   if (VISA_DATABASE[nationality] && VISA_DATABASE[nationality][destination]) {
+    console.log('✅ Found exact match');
     return VISA_DATABASE[nationality][destination];
   }
   
-  // Check partial matches for destinations like "Tokyo, Japan"
-  for (const [nat, destinations] of Object.entries(VISA_DATABASE)) {
-    if (nat === nationality) {
-      for (const [dest, info] of Object.entries(destinations)) {
-        if (destination.toLowerCase().includes(dest.toLowerCase()) || 
-            dest.toLowerCase().includes(destination.toLowerCase())) {
+  // Check all possible nationality variations
+  for (const [dbNationality, destinations] of Object.entries(VISA_DATABASE)) {
+    if (nationality.toLowerCase() === dbNationality.toLowerCase()) {
+      console.log(`🔍 Found nationality match: ${dbNationality}`);
+      
+      // Check exact destination match
+      if (destinations[destination]) {
+        console.log('✅ Found exact destination match');
+        return destinations[destination];
+      }
+      
+      // Check partial destination matches
+      for (const [dbDestination, info] of Object.entries(destinations)) {
+        if (destination.toLowerCase().includes(dbDestination.toLowerCase()) || 
+            dbDestination.toLowerCase().includes(destination.toLowerCase())) {
+          console.log(`✅ Found partial destination match: ${dbDestination}`);
           return info;
         }
       }
     }
   }
   
+  // Check partial nationality matches
+  for (const [dbNationality, destinations] of Object.entries(VISA_DATABASE)) {
+    if (nationality.toLowerCase().includes(dbNationality.toLowerCase()) || 
+        dbNationality.toLowerCase().includes(nationality.toLowerCase())) {
+      console.log(`🔍 Found partial nationality match: ${dbNationality}`);
+      
+      // Check destination matches for this nationality
+      for (const [dbDestination, info] of Object.entries(destinations)) {
+        if (destination.toLowerCase() === dbDestination.toLowerCase() ||
+            destination.toLowerCase().includes(dbDestination.toLowerCase()) || 
+            dbDestination.toLowerCase().includes(destination.toLowerCase())) {
+          console.log(`✅ Found destination match: ${dbDestination}`);
+          return info;
+        }
+      }
+    }
+  }
+  
+  console.log('❌ No match found in database');
   return null;
 }
 
