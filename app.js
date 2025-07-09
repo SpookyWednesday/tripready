@@ -1,239 +1,35 @@
-// Travel Packer - Main Application Logic
-// API Configuration
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
-// COMPREHENSIVE MAJOR CITIES DATABASE (Including Hong Kong)
-const MAJOR_CITIES = [
-    // North America
-    { city: "New York", country: "United States", region: "North America", weatherName: "New York" },
-    { city: "Los Angeles", country: "United States", region: "North America", weatherName: "Los Angeles" },
-    { city: "Chicago", country: "United States", region: "North America", weatherName: "Chicago" },
-    { city: "Miami", country: "United States", region: "North America", weatherName: "Miami" },
-    { city: "Las Vegas", country: "United States", region: "North America", weatherName: "Las Vegas" },
-    { city: "San Francisco", country: "United States", region: "North America", weatherName: "San Francisco" },
-    { city: "Washington DC", country: "United States", region: "North America", weatherName: "Washington" },
-    { city: "Boston", country: "United States", region: "North America", weatherName: "Boston" },
-    { city: "Seattle", country: "United States", region: "North America", weatherName: "Seattle" },
-    { city: "Toronto", country: "Canada", region: "North America", weatherName: "Toronto" },
-    { city: "Vancouver", country: "Canada", region: "North America", weatherName: "Vancouver" },
-    { city: "Montreal", country: "Canada", region: "North America", weatherName: "Montreal" },
-    { city: "Mexico City", country: "Mexico", region: "North America", weatherName: "Mexico City" },
-    { city: "Cancun", country: "Mexico", region: "North America", weatherName: "Cancun" },
-    
-    // Europe
-    { city: "London", country: "United Kingdom", region: "Europe", weatherName: "London" },
-    { city: "Paris", country: "France", region: "Europe", weatherName: "Paris" },
-    { city: "Rome", country: "Italy", region: "Europe", weatherName: "Rome" },
-    { city: "Berlin", country: "Germany", region: "Europe", weatherName: "Berlin" },
-    { city: "Madrid", country: "Spain", region: "Europe", weatherName: "Madrid" },
-    { city: "Barcelona", country: "Spain", region: "Europe", weatherName: "Barcelona" },
-    { city: "Amsterdam", country: "Netherlands", region: "Europe", weatherName: "Amsterdam" },
-    { city: "Vienna", country: "Austria", region: "Europe", weatherName: "Vienna" },
-    { city: "Prague", country: "Czech Republic", region: "Europe", weatherName: "Prague" },
-    { city: "Budapest", country: "Hungary", region: "Europe", weatherName: "Budapest" },
-    { city: "Warsaw", country: "Poland", region: "Europe", weatherName: "Warsaw" },
-    { city: "Stockholm", country: "Sweden", region: "Europe", weatherName: "Stockholm" },
-    { city: "Copenhagen", country: "Denmark", region: "Europe", weatherName: "Copenhagen" },
-    { city: "Oslo", country: "Norway", region: "Europe", weatherName: "Oslo" },
-    { city: "Helsinki", country: "Finland", region: "Europe", weatherName: "Helsinki" },
-    { city: "Brussels", country: "Belgium", region: "Europe", weatherName: "Brussels" },
-    { city: "Zurich", country: "Switzerland", region: "Europe", weatherName: "Zurich" },
-    { city: "Geneva", country: "Switzerland", region: "Europe", weatherName: "Geneva" },
-    { city: "Milan", country: "Italy", region: "Europe", weatherName: "Milan" },
-    { city: "Florence", country: "Italy", region: "Europe", weatherName: "Florence" },
-    { city: "Venice", country: "Italy", region: "Europe", weatherName: "Venice" },
-    { city: "Naples", country: "Italy", region: "Europe", weatherName: "Naples" },
-    { city: "Nice", country: "France", region: "Europe", weatherName: "Nice" },
-    { city: "Marseille", country: "France", region: "Europe", weatherName: "Marseille" },
-    { city: "Lyon", country: "France", region: "Europe", weatherName: "Lyon" },
-    { city: "Munich", country: "Germany", region: "Europe", weatherName: "Munich" },
-    { city: "Hamburg", country: "Germany", region: "Europe", weatherName: "Hamburg" },
-    { city: "Frankfurt", country: "Germany", region: "Europe", weatherName: "Frankfurt" },
-    { city: "Cologne", country: "Germany", region: "Europe", weatherName: "Cologne" },
-    { city: "Edinburgh", country: "United Kingdom", region: "Europe", weatherName: "Edinburgh" },
-    { city: "Manchester", country: "United Kingdom", region: "Europe", weatherName: "Manchester" },
-    { city: "Dublin", country: "Ireland", region: "Europe", weatherName: "Dublin" },
-    { city: "Lisbon", country: "Portugal", region: "Europe", weatherName: "Lisbon" },
-    { city: "Porto", country: "Portugal", region: "Europe", weatherName: "Porto" },
-    { city: "Athens", country: "Greece", region: "Europe", weatherName: "Athens" },
-    { city: "Santorini", country: "Greece", region: "Europe", weatherName: "Santorini" },
-    { city: "Istanbul", country: "Turkey", region: "Europe/Asia", weatherName: "Istanbul" },
-    { city: "Moscow", country: "Russia", region: "Europe/Asia", weatherName: "Moscow" },
-    { city: "St. Petersburg", country: "Russia", region: "Europe", weatherName: "Saint Petersburg" },
-    
-    // Asia (Enhanced with Hong Kong)
-    { city: "Tokyo", country: "Japan", region: "Asia", weatherName: "Tokyo" },
-    { city: "Osaka", country: "Japan", region: "Asia", weatherName: "Osaka" },
-    { city: "Kyoto", country: "Japan", region: "Asia", weatherName: "Kyoto" },
-    { city: "Seoul", country: "South Korea", region: "Asia", weatherName: "Seoul" },
-    { city: "Busan", country: "South Korea", region: "Asia", weatherName: "Busan" },
-    { city: "Beijing", country: "China", region: "Asia", weatherName: "Beijing" },
-    { city: "Shanghai", country: "China", region: "Asia", weatherName: "Shanghai" },
-    { city: "Hong Kong", country: "Hong Kong", region: "Asia", weatherName: "Hong Kong" },
-    { city: "Macao", country: "Macao", region: "Asia", weatherName: "Macao" },
-    { city: "Singapore", country: "Singapore", region: "Asia", weatherName: "Singapore" },
-    { city: "Bangkok", country: "Thailand", region: "Asia", weatherName: "Bangkok" },
-    { city: "Phuket", country: "Thailand", region: "Asia", weatherName: "Phuket" },
-    { city: "Chiang Mai", country: "Thailand", region: "Asia", weatherName: "Chiang Mai" },
-    { city: "Kuala Lumpur", country: "Malaysia", region: "Asia", weatherName: "Kuala Lumpur" },
-    { city: "Manila", country: "Philippines", region: "Asia", weatherName: "Manila" },
-    { city: "Cebu", country: "Philippines", region: "Asia", weatherName: "Cebu" },
-    { city: "Jakarta", country: "Indonesia", region: "Asia", weatherName: "Jakarta" },
-    { city: "Bali", country: "Indonesia", region: "Asia", weatherName: "Denpasar" },
-    { city: "Ho Chi Minh City", country: "Vietnam", region: "Asia", weatherName: "Ho Chi Minh City" },
-    { city: "Hanoi", country: "Vietnam", region: "Asia", weatherName: "Hanoi" },
-    { city: "Mumbai", country: "India", region: "Asia", weatherName: "Mumbai" },
-    { city: "Delhi", country: "India", region: "Asia", weatherName: "New Delhi" },
-    { city: "Bangalore", country: "India", region: "Asia", weatherName: "Bangalore" },
-    { city: "Chennai", country: "India", region: "Asia", weatherName: "Chennai" },
-    { city: "Kolkata", country: "India", region: "Asia", weatherName: "Kolkata" },
-    { city: "Goa", country: "India", region: "Asia", weatherName: "Panaji" },
-    { city: "Jaipur", country: "India", region: "Asia", weatherName: "Jaipur" },
-    { city: "Agra", country: "India", region: "Asia", weatherName: "Agra" },
-    { city: "Kathmandu", country: "Nepal", region: "Asia", weatherName: "Kathmandu" },
-    { city: "Colombo", country: "Sri Lanka", region: "Asia", weatherName: "Colombo" },
-    { city: "Dhaka", country: "Bangladesh", region: "Asia", weatherName: "Dhaka" },
-    { city: "Islamabad", country: "Pakistan", region: "Asia", weatherName: "Islamabad" },
-    { city: "Karachi", country: "Pakistan", region: "Asia", weatherName: "Karachi" },
-    { city: "Lahore", country: "Pakistan", region: "Asia", weatherName: "Lahore" },
-    { city: "Kabul", country: "Afghanistan", region: "Asia", weatherName: "Kabul" },
-    { city: "Tashkent", country: "Uzbekistan", region: "Asia", weatherName: "Tashkent" },
-    { city: "Almaty", country: "Kazakhstan", region: "Asia", weatherName: "Almaty" },
-    
-    // Middle East
-    { city: "Dubai", country: "UAE", region: "Middle East", weatherName: "Dubai" },
-    { city: "Abu Dhabi", country: "UAE", region: "Middle East", weatherName: "Abu Dhabi" },
-    { city: "Doha", country: "Qatar", region: "Middle East", weatherName: "Doha" },
-    { city: "Kuwait City", country: "Kuwait", region: "Middle East", weatherName: "Kuwait" },
-    { city: "Riyadh", country: "Saudi Arabia", region: "Middle East", weatherName: "Riyadh" },
-    { city: "Jeddah", country: "Saudi Arabia", region: "Middle East", weatherName: "Jeddah" },
-    { city: "Mecca", country: "Saudi Arabia", region: "Middle East", weatherName: "Mecca" },
-    { city: "Tehran", country: "Iran", region: "Middle East", weatherName: "Tehran" },
-    { city: "Baghdad", country: "Iraq", region: "Middle East", weatherName: "Baghdad" },
-    { city: "Damascus", country: "Syria", region: "Middle East", weatherName: "Damascus" },
-    { city: "Beirut", country: "Lebanon", region: "Middle East", weatherName: "Beirut" },
-    { city: "Amman", country: "Jordan", region: "Middle East", weatherName: "Amman" },
-    { city: "Jerusalem", country: "Israel", region: "Middle East", weatherName: "Jerusalem" },
-    { city: "Tel Aviv", country: "Israel", region: "Middle East", weatherName: "Tel Aviv" },
-    { city: "Ankara", country: "Turkey", region: "Middle East", weatherName: "Ankara" },
-    
-    // Africa
-    { city: "Cairo", country: "Egypt", region: "Africa", weatherName: "Cairo" },
-    { city: "Alexandria", country: "Egypt", region: "Africa", weatherName: "Alexandria" },
-    { city: "Cape Town", country: "South Africa", region: "Africa", weatherName: "Cape Town" },
-    { city: "Johannesburg", country: "South Africa", region: "Africa", weatherName: "Johannesburg" },
-    { city: "Durban", country: "South Africa", region: "Africa", weatherName: "Durban" },
-    { city: "Lagos", country: "Nigeria", region: "Africa", weatherName: "Lagos" },
-    { city: "Abuja", country: "Nigeria", region: "Africa", weatherName: "Abuja" },
-    { city: "Nairobi", country: "Kenya", region: "Africa", weatherName: "Nairobi" },
-    { city: "Mombasa", country: "Kenya", region: "Africa", weatherName: "Mombasa" },
-    { city: "Dar es Salaam", country: "Tanzania", region: "Africa", weatherName: "Dar es Salaam" },
-    { city: "Addis Ababa", country: "Ethiopia", region: "Africa", weatherName: "Addis Ababa" },
-    { city: "Accra", country: "Ghana", region: "Africa", weatherName: "Accra" },
-    { city: "Dakar", country: "Senegal", region: "Africa", weatherName: "Dakar" },
-    { city: "Casablanca", country: "Morocco", region: "Africa", weatherName: "Casablanca" },
-    { city: "Marrakech", country: "Morocco", region: "Africa", weatherName: "Marrakech" },
-    { city: "Rabat", country: "Morocco", region: "Africa", weatherName: "Rabat" },
-    { city: "Tunis", country: "Tunisia", region: "Africa", weatherName: "Tunis" },
-    { city: "Algiers", country: "Algeria", region: "Africa", weatherName: "Algiers" },
-    { city: "Tripoli", country: "Libya", region: "Africa", weatherName: "Tripoli" },
-    { city: "Khartoum", country: "Sudan", region: "Africa", weatherName: "Khartoum" },
-    { city: "Kampala", country: "Uganda", region: "Africa", weatherName: "Kampala" },
-    { city: "Kigali", country: "Rwanda", region: "Africa", weatherName: "Kigali" },
-    { city: "Lusaka", country: "Zambia", region: "Africa", weatherName: "Lusaka" },
-    { city: "Harare", country: "Zimbabwe", region: "Africa", weatherName: "Harare" },
-    { city: "Gaborone", country: "Botswana", region: "Africa", weatherName: "Gaborone" },
-    { city: "Windhoek", country: "Namibia", region: "Africa", weatherName: "Windhoek" },
-    
-    // Oceania
-    { city: "Sydney", country: "Australia", region: "Oceania", weatherName: "Sydney" },
-    { city: "Melbourne", country: "Australia", region: "Oceania", weatherName: "Melbourne" },
-    { city: "Brisbane", country: "Australia", region: "Oceania", weatherName: "Brisbane" },
-    { city: "Perth", country: "Australia", region: "Oceania", weatherName: "Perth" },
-    { city: "Adelaide", country: "Australia", region: "Oceania", weatherName: "Adelaide" },
-    { city: "Canberra", country: "Australia", region: "Oceania", weatherName: "Canberra" },
-    { city: "Auckland", country: "New Zealand", region: "Oceania", weatherName: "Auckland" },
-    { city: "Wellington", country: "New Zealand", region: "Oceania", weatherName: "Wellington" },
-    { city: "Christchurch", country: "New Zealand", region: "Oceania", weatherName: "Christchurch" },
-    { city: "Suva", country: "Fiji", region: "Oceania", weatherName: "Suva" },
-    { city: "Port Moresby", country: "Papua New Guinea", region: "Oceania", weatherName: "Port Moresby" },
-    
-    // South America
-    { city: "São Paulo", country: "Brazil", region: "South America", weatherName: "São Paulo" },
-    { city: "Rio de Janeiro", country: "Brazil", region: "South America", weatherName: "Rio de Janeiro" },
-    { city: "Brasília", country: "Brazil", region: "South America", weatherName: "Brasília" },
-    { city: "Salvador", country: "Brazil", region: "South America", weatherName: "Salvador" },
-    { city: "Recife", country: "Brazil", region: "South America", weatherName: "Recife" },
-    { city: "Buenos Aires", country: "Argentina", region: "South America", weatherName: "Buenos Aires" },
-    { city: "Córdoba", country: "Argentina", region: "South America", weatherName: "Córdoba" },
-    { city: "Santiago", country: "Chile", region: "South America", weatherName: "Santiago" },
-    { city: "Valparaíso", country: "Chile", region: "South America", weatherName: "Valparaíso" },
-    { city: "Lima", country: "Peru", region: "South America", weatherName: "Lima" },
-    { city: "Cusco", country: "Peru", region: "South America", weatherName: "Cusco" },
-    { city: "Bogotá", country: "Colombia", region: "South America", weatherName: "Bogotá" },
-    { city: "Medellín", country: "Colombia", region: "South America", weatherName: "Medellín" },
-    { city: "Cartagena", country: "Colombia", region: "South America", weatherName: "Cartagena" },
-    { city: "Caracas", country: "Venezuela", region: "South America", weatherName: "Caracas" },
-    { city: "Quito", country: "Ecuador", region: "South America", weatherName: "Quito" },
-    { city: "Guayaquil", country: "Ecuador", region: "South America", weatherName: "Guayaquil" },
-    { city: "La Paz", country: "Bolivia", region: "South America", weatherName: "La Paz" },
-    { city: "Santa Cruz", country: "Bolivia", region: "South America", weatherName: "Santa Cruz de la Sierra" },
-    { city: "Asunción", country: "Paraguay", region: "South America", weatherName: "Asunción" },
-    { city: "Montevideo", country: "Uruguay", region: "South America", weatherName: "Montevideo" },
-    { city: "Georgetown", country: "Guyana", region: "South America", weatherName: "Georgetown" },
-    { city: "Paramaribo", country: "Suriname", region: "South America", weatherName: "Paramaribo" },
-    { city: "Cayenne", country: "French Guiana", region: "South America", weatherName: "Cayenne" },
-    
-    // Caribbean
-    { city: "Havana", country: "Cuba", region: "Caribbean", weatherName: "Havana" },
-    { city: "Kingston", country: "Jamaica", region: "Caribbean", weatherName: "Kingston" },
-    { city: "San Juan", country: "Puerto Rico", region: "Caribbean", weatherName: "San Juan" },
-    { city: "Santo Domingo", country: "Dominican Republic", region: "Caribbean", weatherName: "Santo Domingo" },
-    { city: "Port-au-Prince", country: "Haiti", region: "Caribbean", weatherName: "Port-au-Prince" },
-    { city: "Nassau", country: "Bahamas", region: "Caribbean", weatherName: "Nassau" },
-    { city: "Bridgetown", country: "Barbados", region: "Caribbean", weatherName: "Bridgetown" },
-    { city: "Port of Spain", country: "Trinidad and Tobago", region: "Caribbean", weatherName: "Port of Spain" },
-    { city: "St. George's", country: "Grenada", region: "Caribbean", weatherName: "St. George's" }
+// RAPIDAPI SUPPORTED COUNTRIES ONLY - Used for both nationality AND destination
+const RAPIDAPI_SUPPORTED_COUNTRIES = [
+"Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+"Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+"Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
+"Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
+"Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
+"Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
+"Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+"Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
+"Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+"Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+"Lithuania", "Luxembourg", "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+"Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+"Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
+"Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+"Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
+"San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
+"Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
+"Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
+"Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
+"Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-// COMPLETE NATIONALITY LIST - ALL RAPIDAPI SUPPORTED COUNTRIES (Alphabetical)
-const ALL_NATIONALITIES = [
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
-    "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
-    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
-    "Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
-    "Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
-    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
-    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
-    "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
-    "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
-    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
-    "Lithuania", "Luxembourg", "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
-    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
-    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
-    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
-    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
-    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
-    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
-    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
-    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-];
-
-// ENHANCED API Functions with better city/country mapping
+// SIMPLIFIED API Functions - Country-only
 async function getWeatherData(destination, departureDate, returnDate) {
+    console.log('🌤️ Weather request for country:', destination);
+
     try {
-        // Enhanced city data lookup with better parsing
-        const cityData = MAJOR_CITIES.find(city => 
-            city.city === destination || 
-            `${city.city}, ${city.country}` === destination ||
-            destination.toLowerCase().includes(city.city.toLowerCase())
-        );
-        
-        const weatherLocation = cityData ? cityData.weatherName : extractCityFromDestination(destination);
-        console.log(`Weather lookup: ${destination} → ${weatherLocation}`);
-        
-        const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(weatherLocation)}&departureDate=${departureDate}&returnDate=${returnDate}`);
+        const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
         
         if (!response.ok) {
             throw new Error(`Weather API returned ${response.status}`);
@@ -243,7 +39,7 @@ async function getWeatherData(destination, departureDate, returnDate) {
     } catch (error) {
         console.error('Weather API Error:', error);
         return {
-            location: { name: destination, country: 'Unknown' },
+            location: { name: destination, country: destination },
             current: {
                 temperature: 20,
                 description: 'Weather data unavailable',
@@ -263,53 +59,45 @@ async function getWeatherData(destination, departureDate, returnDate) {
 }
 
 async function getVisaData(nationality, destination) {
+    console.log('🛂 ===== SIMPLIFIED VISA REQUEST =====');
+    console.log('📍 Nationality:', nationality);
+    console.log('📍 Destination:', destination);
+    console.log('🌐 API_BASE:', API_BASE);
+
     try {
-        // Enhanced city data lookup with better parsing for visa country extraction
-        const cityData = MAJOR_CITIES.find(city => 
-            city.city === destination || 
-            `${city.city}, ${city.country}` === destination ||
-            destination.toLowerCase().includes(city.city.toLowerCase())
-        );
+        // SIMPLIFIED: Direct country-to-country lookup
+        const url = `${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`;
+        console.log('🔗 Visa API URL:', url);
         
-        const visaDestination = cityData ? cityData.country : extractCountryFromDestination(destination);
-        console.log(`Visa lookup: ${nationality} → ${destination} (${visaDestination})`);
+        console.log('🚀 Making visa API call...');
+        const response = await fetch(url);
         
-        const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(visaDestination)}`);
+        console.log('📊 Visa response status:', response.status);
+        console.log('📋 Visa response ok:', response.ok);
         
         if (!response.ok) {
-            throw new Error(`Visa API returned ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ Visa API Error:', errorText);
+            throw new Error(`Visa API returned ${response.status}: ${errorText}`);
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ Visa API Response:', data);
+        
+        return data;
     } catch (error) {
-        console.error('Visa API Error:', error);
+        console.error('💥 Visa API Error:', error);
         return {
             nationality: nationality,
             destination: destination,
-            visaStatus: 'unknown',
-            visaMessage: 'Check with embassy - service temporarily unavailable',
-            additionalInfo: 'Please verify visa requirements with the embassy',
-            stayDuration: 'Check embassy guidelines'
+            visaStatus: 'service_error',
+            visaMessage: 'Visa service temporarily unavailable',
+            additionalInfo: `Debug Error: ${error.message}`,
+            stayDuration: 'Contact embassy',
+            source: 'error_fallback',
+            debugError: error.message
         };
     }
-}
-
-// Enhanced city/country extraction functions
-function extractCityFromDestination(destination) {
-    if (destination.includes(',')) {
-        // Handle "Tokyo, Japan" format - extract city
-        return destination.split(',')[0].trim();
-    }
-    return destination;
-}
-
-function extractCountryFromDestination(destination) {
-    if (destination.includes(',')) {
-        // Handle "Tokyo, Japan" format - extract country
-        const parts = destination.split(',').map(part => part.trim());
-        return parts[parts.length - 1];
-    }
-    return destination;
 }
 
 async function getRecommendations(destination, weather, tripType, duration, activities) {
@@ -327,7 +115,7 @@ async function getRecommendations(destination, weather, tripType, duration, acti
                 activities
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Recommendations API returned ${response.status}`);
         }
@@ -416,14 +204,13 @@ class TravelPackingApp {
     }
 
     init() {
-        console.log('Initializing Travel Packing App...');
+        console.log('🚀 Initializing Simplified Travel Packing App...');
         this.loadSavedTheme();
         this.setupEventListeners();
-        this.populateCountryDropdown();
-        this.populateDestinationDropdown();
+        this.populateCountryDropdowns(); // SIMPLIFIED: Same list for both
         this.setMinDates();
         this.loadSavedProgress();
-        console.log('App initialized successfully');
+        console.log('✅ App initialized successfully');
     }
 
     loadSavedTheme() {
@@ -478,7 +265,7 @@ class TravelPackingApp {
                 retryBtn.addEventListener('click', () => this.retryGeneration());
             }
 
-            console.log('Event listeners set up successfully');
+            console.log('✅ Event listeners set up successfully');
         } catch (error) {
             console.error('Error setting up event listeners:', error);
         }
@@ -498,62 +285,34 @@ class TravelPackingApp {
         }
     }
 
-    populateCountryDropdown() {
+    // SIMPLIFIED: Use same country list for both nationality and destination
+    populateCountryDropdowns() {
         try {
-            const select = document.getElementById('nationality');
-            if (select) {
-                // Use complete nationality list and sort alphabetically
-                ALL_NATIONALITIES.forEach(country => {
+            // Populate nationality dropdown
+            const nationalitySelect = document.getElementById('nationality');
+            if (nationalitySelect) {
+                RAPIDAPI_SUPPORTED_COUNTRIES.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country;
                     option.textContent = country;
-                    select.appendChild(option);
+                    nationalitySelect.appendChild(option);
                 });
-                console.log(`Populated ${ALL_NATIONALITIES.length} nationalities`);
+                console.log(`✅ Populated nationality with ${RAPIDAPI_SUPPORTED_COUNTRIES.length} countries`);
+            }
+
+            // Populate destination dropdown (same countries)
+            const destinationSelect = document.getElementById('destination');
+            if (destinationSelect) {
+                RAPIDAPI_SUPPORTED_COUNTRIES.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = country;
+                    destinationSelect.appendChild(option);
+                });
+                console.log(`✅ Populated destination with ${RAPIDAPI_SUPPORTED_COUNTRIES.length} countries`);
             }
         } catch (error) {
-            console.error('Error populating country dropdown:', error);
-        }
-    }
-
-    populateDestinationDropdown() {
-        try {
-            const select = document.getElementById('destination');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.children.length > 1) {
-                    select.removeChild(select.lastChild);
-                }
-
-                // Group cities by region for better organization
-                const regions = {};
-                MAJOR_CITIES.forEach(city => {
-                    if (!regions[city.region]) {
-                        regions[city.region] = [];
-                    }
-                    regions[city.region].push(city);
-                });
-
-                // Sort regions and cities
-                Object.keys(regions).sort().forEach(region => {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = region;
-                    
-                    regions[region].sort((a, b) => a.city.localeCompare(b.city)).forEach(city => {
-                        const option = document.createElement('option');
-                        option.value = `${city.city}, ${city.country}`;
-                        option.textContent = `${city.city}, ${city.country}`;
-                        option.setAttribute('data-country', city.country);
-                        option.setAttribute('data-region', city.region);
-                        optgroup.appendChild(option);
-                    });
-                    
-                    select.appendChild(optgroup);
-                });
-                console.log(`Populated ${MAJOR_CITIES.length} destinations`);
-            }
-        } catch (error) {
-            console.error('Error populating destination dropdown:', error);
+            console.error('Error populating country dropdowns:', error);
         }
     }
 
@@ -603,13 +362,13 @@ class TravelPackingApp {
         }
     }
 
-    // SIMPLIFIED: Main checklist generation with dropdown-only destination handling
+    // SIMPLIFIED: Main checklist generation with country-only handling
     async generateChecklist() {
         if (this.isGenerating) return;
         
         try {
             this.isGenerating = true;
-            console.log('Starting checklist generation...');
+            console.log('🚀 ===== STARTING SIMPLIFIED CHECKLIST GENERATION =====');
             
             // Get form element
             const form = document.getElementById('travel-form');
@@ -617,10 +376,10 @@ class TravelPackingApp {
                 throw new Error('Travel form not found');
             }
             
-            // Create FormData from form - simplified destination handling
+            // Create FormData from form
             const formData = new FormData(form);
             
-            // Extract and validate data
+            // Extract and validate data - SIMPLIFIED: Both are just country names
             const tripData = {
                 destination: formData.get('destination')?.trim(),
                 nationality: formData.get('nationality')?.trim(),
@@ -630,7 +389,8 @@ class TravelPackingApp {
                 activities: formData.get('activities')?.trim() || ''
             };
             
-            console.log('Form data extracted:', tripData);
+            console.log('📋 SIMPLIFIED Form data extracted:', tripData);
+            console.log('🎯 Direct country-to-country:', `${tripData.nationality} → ${tripData.destination}`);
             
             // Validate required fields
             const requiredFields = ['destination', 'nationality', 'departureDate', 'returnDate', 'tripType'];
@@ -645,10 +405,13 @@ class TravelPackingApp {
             
             // Calculate trip duration
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
-            console.log(`Trip duration: ${duration} days`);
+            console.log(`📅 Trip duration: ${duration} days`);
             
-            // Get weather and visa data
-            console.log('Fetching weather and visa data...');
+            // SIMPLIFIED: Direct API calls - no complex lookups
+            console.log('🔄 Starting parallel API calls...');
+            console.log('🌤️ Weather call for:', tripData.destination);
+            console.log('🛂 Visa call for:', `${tripData.nationality} → ${tripData.destination}`);
+            
             const [weatherResult, visaResult] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
                 getVisaData(tripData.nationality, tripData.destination)
@@ -657,11 +420,11 @@ class TravelPackingApp {
             const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
             const visa = visaResult.status === 'fulfilled' ? visaResult.value : null;
             
-            console.log('Weather data:', weather);
-            console.log('Visa data:', visa);
+            console.log('🌤️ Weather result:', weather);
+            console.log('🛂 Visa result:', visa);
             
-            // Get recommendations with weather data
-            console.log('Getting recommendations with weather data...');
+            // Get recommendations
+            console.log('🤖 Getting AI recommendations...');
             const recommendations = await getRecommendations(
                 tripData.destination, 
                 weather,
@@ -670,7 +433,7 @@ class TravelPackingApp {
                 tripData.activities
             );
             
-            console.log('Recommendations:', recommendations);
+            console.log('🤖 Recommendations result:', recommendations);
             
             // Store trip data
             this.currentTrip = {
@@ -685,7 +448,7 @@ class TravelPackingApp {
             this.displayResults();
             
         } catch (error) {
-            console.error('Error generating checklist:', error);
+            console.error('💥 Simplified checklist generation error:', error);
             this.showError(error.message || 'Failed to generate checklist');
         } finally {
             this.isGenerating = false;
@@ -738,7 +501,7 @@ class TravelPackingApp {
     }
 
     displayResults() {
-        console.log('Displaying results...');
+        console.log('📊 Displaying results...');
         
         const loadingSection = document.getElementById('loading-section');
         const resultsSection = document.getElementById('results-section');
@@ -842,7 +605,8 @@ class TravelPackingApp {
             'visa_required': 'required',
             'e_visa': 'evisa',
             'visa_on_arrival': 'evisa',
-            'unknown': 'unknown'
+            'unknown': 'unknown',
+            'service_error': 'unknown'
         };
         const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
         
@@ -851,6 +615,7 @@ class TravelPackingApp {
                 <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
                 <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
                 <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
+                ${visa.source ? `<small class="visa-source">Source: ${visa.source}</small>` : ''}
             </div>
         `;
     }
@@ -1026,6 +791,17 @@ class TravelPackingApp {
         }
     }
 }
+
+// ADD DEBUG FUNCTION
+window.debugVisaAPI = async function(nationality = 'China', destination = 'United States') {
+    console.log('🧪 ===== MANUAL VISA DEBUG TEST =====');
+    console.log(`🧪 Testing: ${nationality} → ${destination}`);
+
+    const result = await getVisaData(nationality, destination);
+    console.log('🧪 Manual test result:', result);
+
+    return result;
+};
 
 // Initialize the app
 const app = new TravelPackingApp();
