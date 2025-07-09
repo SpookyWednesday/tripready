@@ -2,33 +2,49 @@
 // API Configuration
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
-// RapidAPI Compatible Countries List (Alphabetical)
+// COMPLETE RAPIDAPI SUPPORTED COUNTRIES LIST (190+ countries including Hong Kong)
 const RAPIDAPI_COUNTRIES = [
-    "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
-    "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria",
-    "Cambodia", "Canada", "Chile", "China", "Colombia", "Croatia", "Cuba", "Cyprus", "Czech Republic",
-    "Denmark", "Ecuador", "Egypt", "Estonia", "Finland", "France", "Georgia", "Germany", "Ghana", "Greece",
-    "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica",
-    "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Latvia", "Lebanon", "Lithuania", "Luxembourg",
-    "Malaysia", "Mexico", "Morocco", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", "Pakistan",
-    "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saudi Arabia", "Singapore",
-    "Slovakia", "Slovenia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland",
-    "Thailand", "Tunisia", "Turkey", "UAE", "Ukraine", "United Kingdom", "United States", "Uruguay",
-    "Venezuela", "Vietnam"
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+    "Cambodia", "Cameroon", "Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+    "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+    "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+    "Fiji", "Finland", "France",
+    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+    "Haiti", "Honduras", "Hong Kong", "Hungary",
+    "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast",
+    "Jamaica", "Japan", "Jordan",
+    "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
+    "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+    "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+    "Oman",
+    "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+    "Qatar",
+    "Romania", "Russia", "Rwanda",
+    "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+    "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+    "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+    "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+    "Yemen",
+    "Zambia", "Zimbabwe"
 ];
 
-// API Functions
+// Enhanced API Functions with Debugging
 async function getWeatherData(destination, departureDate, returnDate) {
     try {
+        console.log('🌤️ Frontend calling weather API:', destination);
         const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
         
         if (!response.ok) {
             throw new Error(`Weather API returned ${response.status}`);
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ Frontend received weather data:', data);
+        return data;
     } catch (error) {
-        console.error('Weather API Error:', error);
+        console.error('❌ Weather API Error:', error);
         return {
             location: { name: destination, country: 'Unknown' },
             current: {
@@ -51,15 +67,19 @@ async function getWeatherData(destination, departureDate, returnDate) {
 
 async function getVisaData(nationality, destination) {
     try {
+        console.log('🛂 Frontend calling visa API:', nationality, '→', destination);
         const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`);
         
         if (!response.ok) {
+            console.error('❌ Visa API HTTP Error:', response.status, response.statusText);
             throw new Error(`Visa API returned ${response.status}`);
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ Frontend received visa data:', data);
+        return data;
     } catch (error) {
-        console.error('Visa API Error:', error);
+        console.error('❌ Visa API Error:', error);
         return {
             nationality: nationality,
             destination: destination,
@@ -73,6 +93,7 @@ async function getVisaData(nationality, destination) {
 
 async function getRecommendations(destination, weather, tripType, duration, activities) {
     try {
+        console.log('🤖 Frontend calling recommendations API:', destination, tripType);
         const response = await fetch(`${API_BASE}/recommendations`, {
             method: 'POST',
             headers: {
@@ -91,9 +112,11 @@ async function getRecommendations(destination, weather, tripType, duration, acti
             throw new Error(`Recommendations API returned ${response.status}`);
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ Frontend received recommendations data:', data);
+        return data;
     } catch (error) {
-        console.error('Recommendations API Error:', error);
+        console.error('❌ Recommendations API Error:', error);
         return null;
     }
 }
@@ -175,13 +198,13 @@ class TravelPackingApp {
     }
 
     init() {
-        console.log('Initializing Travel Packing App...');
+        console.log('🚀 Initializing Travel Packing App...');
         this.loadSavedTheme();
         this.setupEventListeners();
         this.populateDropdowns();
         this.setMinDates();
         this.loadSavedProgress();
-        console.log('App initialized successfully');
+        console.log('✅ App initialized successfully');
     }
 
     loadSavedTheme() {
@@ -267,7 +290,7 @@ class TravelPackingApp {
                     option.textContent = country;
                     nationalitySelect.appendChild(option);
                 });
-                console.log(`Populated ${RAPIDAPI_COUNTRIES.length} nationalities`);
+                console.log(`📍 Populated ${RAPIDAPI_COUNTRIES.length} nationalities (including Hong Kong, Macao, Taiwan)`);
             }
 
             // Populate destination dropdown
@@ -279,7 +302,7 @@ class TravelPackingApp {
                     option.textContent = country;
                     destinationSelect.appendChild(option);
                 });
-                console.log(`Populated ${RAPIDAPI_COUNTRIES.length} destinations`);
+                console.log(`📍 Populated ${RAPIDAPI_COUNTRIES.length} destinations (including Hong Kong, Macao, Taiwan)`);
             }
         } catch (error) {
             console.error('Error populating dropdowns:', error);
@@ -337,7 +360,7 @@ class TravelPackingApp {
 
         try {
             this.isGenerating = true;
-            console.log('Starting checklist generation...');
+            console.log('🎯 Starting checklist generation...');
 
             // Get form element
             const form = document.getElementById('travel-form');
@@ -358,7 +381,7 @@ class TravelPackingApp {
                 activities: formData.get('activities')?.trim() || ''
             };
 
-            console.log('Form data extracted:', tripData);
+            console.log('📝 Form data extracted:', tripData);
 
             // Validate required fields
             const requiredFields = ['destination', 'nationality', 'departureDate', 'returnDate', 'tripType'];
@@ -373,10 +396,10 @@ class TravelPackingApp {
 
             // Calculate trip duration
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
-            console.log(`Trip duration: ${duration} days`);
+            console.log(`📅 Trip duration: ${duration} days`);
 
             // Call APIs in parallel
-            console.log('Calling APIs in parallel...');
+            console.log('🔄 Calling APIs in parallel...');
             const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
                 getVisaData(tripData.nationality, tripData.destination),
@@ -388,7 +411,11 @@ class TravelPackingApp {
             const visa = visaData.status === 'fulfilled' ? visaData.value : null;
             const recommendations = recommendationsData.status === 'fulfilled' ? recommendationsData.value : null;
 
-            console.log('API Results:', { weather, visa, recommendations });
+            console.log('📊 API Results Summary:', { 
+                weather: weather ? '✅ Success' : '❌ Failed', 
+                visa: visa ? '✅ Success' : '❌ Failed', 
+                recommendations: recommendations ? '✅ Success' : '❌ Failed' 
+            });
 
             // Store trip data
             this.currentTrip = {
@@ -403,7 +430,7 @@ class TravelPackingApp {
             this.displayResults();
 
         } catch (error) {
-            console.error('Error generating checklist:', error);
+            console.error('❌ Error generating checklist:', error);
             this.showError(error.message || 'Failed to generate checklist');
         } finally {
             this.isGenerating = false;
@@ -456,7 +483,7 @@ class TravelPackingApp {
     }
 
     displayResults() {
-        console.log('Displaying results...');
+        console.log('🎨 Displaying results...');
 
         const loadingSection = document.getElementById('loading-section');
         const resultsSection = document.getElementById('results-section');
