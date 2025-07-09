@@ -1,12 +1,11 @@
+// MINIMAL: Only basic caching, NO FALLBACK DATABASE
 const apiCache = new Map();
-const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours
 
-// SIMPLIFIED: Basic rate limiting - prevent hammering
+// MINIMAL: Basic rate limiting
 const rateLimitTracker = {
     lastCall: 0,
-    callCount: 0,
-    resetTime: 0,
-    minInterval: 1000 // 1 second between calls
+    minInterval: 500 // 0.5 seconds between calls
 };
 
 exports.handler = async (event, context) => {
@@ -32,12 +31,12 @@ exports.handler = async (event, context) => {
     try {
         const { nationality, destination } = event.queryStringParameters || {};
 
-        console.log('========== SIMPLIFIED VISA CHECK ==========');
-        console.log(`🎯 Direct request: ${nationality} → ${destination}`);
+        console.log('========== API-ONLY VISA CHECK ==========');
+        console.log(`🎯 Request: ${nationality} → ${destination}`);
         console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
 
         if (!nationality || !destination) {
-            console.log('❌ Missing parameters');
+            console.log('❌ Missing required parameters');
             return {
                 statusCode: 400,
                 headers,
@@ -45,14 +44,39 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // SIMPLIFIED: Direct country names, no complex parsing
+        // SIMPLE: Direct string handling
         const cleanNationality = nationality.trim();
         const cleanDestination = destination.trim();
         const cacheKey = `${cleanNationality}-${cleanDestination}`;
 
-        console.log(`🔍 Cache key: ${cacheKey}`);
+        console.log(`🔍 Parameters: "${cleanNationality}" → "${cleanDestination}"`);
 
-        // STEP 1: Check cache first
+        // Check environment variables
+        const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+        console.log('🔐 Environment Check:');
+        console.log('  - RAPIDAPI_KEY exists:', !!RAPIDAPI_KEY);
+        console.log('  - RAPIDAPI_KEY length:', RAPIDAPI_KEY ? RAPIDAPI_KEY.length : 0);
+
+        if (!RAPIDAPI_KEY) {
+            console.error('❌ RapidAPI key not found');
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({
+                    nationality: nationality,
+                    destination: destination,
+                    visaStatus: 'config_error',
+                    visaMessage: 'Visa service not configured',
+                    additionalInfo: 'API key is missing. Please contact support.',
+                    stayDuration: 'Contact embassy',
+                    cached: false,
+                    timestamp: new Date().toISOString(),
+                    source: 'config_error'
+                }),
+            };
+        }
+
+        // Check cache
         const cachedResult = getCachedResult(cacheKey);
         if (cachedResult) {
             console.log('💾 Cache hit - returning cached result');
@@ -66,33 +90,12 @@ exports.handler = async (event, context) => {
                 }),
             };
         }
-        console.log('💾 No cache hit');
+        console.log('💾 No cache - proceeding to API');
 
-        // STEP 2: Check API availability
-        const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-        if (!RAPIDAPI_KEY) {
-            console.error('❌ RapidAPI key not configured');
-            return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({
-                    nationality: nationality,
-                    destination: destination,
-                    visaStatus: 'configuration_error',
-                    visaMessage: 'Visa service configuration error',
-                    additionalInfo: 'Service temporarily unavailable due to configuration issue.',
-                    stayDuration: 'Contact embassy',
-                    cached: false,
-                    timestamp: new Date().toISOString(),
-                    source: 'config_error'
-                }),
-            };
-        }
-        console.log('✅ RapidAPI key found');
-
-        // STEP 3: SIMPLIFIED rate limiting check
-        if (!canMakeAPICall()) {
-            console.log('⏱️ Rate limited - too soon since last call');
+        // Basic rate limiting
+        const now = Date.now();
+        if (rateLimitTracker.lastCall > 0 && (now - rateLimitTracker.lastCall) < rateLimitTracker.minInterval) {
+            console.log('⏱️ Rate limited');
             return {
                 statusCode: 200,
                 headers,
@@ -101,7 +104,7 @@ exports.handler = async (event, context) => {
                     destination: destination,
                     visaStatus: 'rate_limited',
                     visaMessage: 'Too many requests - please wait',
-                    additionalInfo: 'API rate limit reached. Please wait before trying again.',
+                    additionalInfo: 'Please wait a moment before trying again.',
                     stayDuration: 'Please retry',
                     cached: false,
                     timestamp: new Date().toISOString(),
@@ -110,11 +113,14 @@ exports.handler = async (event, context) => {
             };
         }
 
-        console.log('🚀 Making RapidAPI call...');
-        console.log(`📞 API call: ${cleanNationality} → ${cleanDestination}`);
+        console.log('🚀 ===== CALLING RAPIDAPI (NO FALLBACK) =====');
+        console.log('📞 API Details:');
+        console.log('  - URL: https://visa-requirements.p.rapidapi.com/visa-requirements');
+        console.log('  - From:', cleanNationality);
+        console.log('  - To:', cleanDestination);
 
-        // Update rate limit tracker BEFORE API call
-        updateRateLimitTracker();
+        // Update rate limit tracker
+        rateLimitTracker.lastCall = now;
 
         try {
             const visaResponse = await axios.get(
@@ -128,103 +134,173 @@ exports.handler = async (event, context) => {
                         'X-RapidAPI-Key': RAPIDAPI_KEY,
                         'X-RapidAPI-Host': 'visa-requirements.p.rapidapi.com'
                     },
-                    timeout: 15000
+                    timeout: 20000, // 20 seconds timeout
+                    validateStatus: function (status) {
+                        return status < 600; // Don't throw for any HTTP status < 600
+                    }
                 }
             );
 
-            console.log('✅ RapidAPI call successful!');
-            console.log('📊 Response status:', visaResponse.status);
-            console.log('📋 Response data:', JSON.stringify(visaResponse.data, null, 2));
-            
-            const processedVisa = processRapidAPIResponse(visaResponse.data);
-            console.log('🔄 Processed visa data:', processedVisa);
-            
-            const result = {
-                nationality: nationality,
-                destination: destination,
-                visaStatus: processedVisa.status,
-                visaMessage: processedVisa.message,
-                additionalInfo: processedVisa.additionalInfo,
-                stayDuration: processedVisa.duration,
-                requirements: getRequirements(processedVisa.status),
-                cached: false,
-                timestamp: new Date().toISOString(),
-                source: 'rapidapi_live',
-                apiSuccess: true
-            };
-            
-            console.log('✅ Final result:', result);
-            
-            // Cache successful result
-            setCacheResult(cacheKey, result);
-            
-            return { 
-                statusCode: 200, 
-                headers, 
-                body: JSON.stringify(result) 
-            };
-            
-        } catch (apiError) {
-            console.error('❌ RapidAPI call failed:', {
-                status: apiError.response?.status,
-                message: apiError.message,
-                data: apiError.response?.data
-            });
-            
-            // Handle specific API errors
-            let errorMessage = 'Unable to retrieve visa information';
-            let errorInfo = 'Please check with embassy for current requirements.';
-            let visaStatus = 'api_error';
-            
-            if (apiError.response?.status === 404) {
-                errorMessage = 'Country combination not supported';
-                errorInfo = 'This nationality/destination combination may not be supported by the visa service.';
-                visaStatus = 'unsupported';
-            } else if (apiError.response?.status === 401 || apiError.response?.status === 403) {
-                errorMessage = 'API authentication failed';
-                errorInfo = 'There is an issue with the visa service authentication.';
-                visaStatus = 'auth_error';
-            } else if (apiError.response?.status === 429) {
-                errorMessage = 'API rate limited';
-                errorInfo = 'Too many requests to the visa service. Please try again later.';
-                visaStatus = 'api_rate_limited';
-                rateLimitTracker.resetTime = Date.now() + (60 * 1000); // Block for 1 minute
+            console.log('📊 ===== RAPIDAPI RESPONSE =====');
+            console.log('  - Status:', visaResponse.status);
+            console.log('  - Status Text:', visaResponse.statusText);
+            console.log('  - Headers:', visaResponse.headers);
+            console.log('  - Data Type:', typeof visaResponse.data);
+            console.log('  - Data:', JSON.stringify(visaResponse.data, null, 2));
+
+            if (visaResponse.status === 200) {
+                console.log('✅ ===== API CALL SUCCESSFUL =====');
+                
+                const processedVisa = processAPIResponse(visaResponse.data);
+                console.log('🔄 Processed visa result:', processedVisa);
+                
+                const result = {
+                    nationality: nationality,
+                    destination: destination,
+                    visaStatus: processedVisa.status,
+                    visaMessage: processedVisa.message,
+                    additionalInfo: processedVisa.additionalInfo,
+                    stayDuration: processedVisa.duration,
+                    requirements: getRequirements(processedVisa.status),
+                    cached: false,
+                    timestamp: new Date().toISOString(),
+                    source: 'rapidapi_live',
+                    apiSuccess: true,
+                    apiStatus: visaResponse.status,
+                    rawApiData: visaResponse.data
+                };
+                
+                // Cache successful result
+                setCacheResult(cacheKey, result);
+                
+                console.log('✅ ===== RETURNING SUCCESS RESULT =====');
+                return { statusCode: 200, headers, body: JSON.stringify(result) };
+                
+            } else {
+                console.error(`❌ ===== API ERROR STATUS ${visaResponse.status} =====`);
+                console.error('Response:', visaResponse.data);
+                
+                // Handle specific API error statuses
+                let errorMessage = 'API request failed';
+                let errorInfo = 'The visa API returned an error.';
+                let visaStatus = 'api_error';
+                
+                if (visaResponse.status === 400) {
+                    errorMessage = 'Invalid country names';
+                    errorInfo = `The API doesn't recognize "${cleanNationality}" or "${cleanDestination}". Please check country names.`;
+                    visaStatus = 'invalid_countries';
+                } else if (visaResponse.status === 401) {
+                    errorMessage = 'API authentication failed';
+                    errorInfo = 'API key is invalid or expired.';
+                    visaStatus = 'auth_failed';
+                } else if (visaResponse.status === 403) {
+                    errorMessage = 'API access denied';
+                    errorInfo = 'Your API subscription doesn\'t include this service.';
+                    visaStatus = 'access_denied';
+                } else if (visaResponse.status === 404) {
+                    errorMessage = 'API endpoint not found';
+                    errorInfo = 'The visa API endpoint was not found.';
+                    visaStatus = 'endpoint_missing';
+                } else if (visaResponse.status === 429) {
+                    errorMessage = 'API rate limit exceeded';
+                    errorInfo = 'Too many API requests. Your plan limit may be reached.';
+                    visaStatus = 'rate_limited_api';
+                } else {
+                    errorMessage = `API error ${visaResponse.status}`;
+                    errorInfo = `HTTP ${visaResponse.status}: ${visaResponse.statusText}`;
+                    visaStatus = 'api_error';
+                }
+                
+                console.log('📤 ===== RETURNING API ERROR =====');
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        nationality: nationality,
+                        destination: destination,
+                        visaStatus: visaStatus,
+                        visaMessage: errorMessage,
+                        additionalInfo: errorInfo,
+                        stayDuration: 'Contact embassy',
+                        requirements: ['Check embassy website', 'Contact consulate', 'Verify requirements'],
+                        cached: false,
+                        timestamp: new Date().toISOString(),
+                        source: 'api_error',
+                        apiSuccess: false,
+                        apiStatus: visaResponse.status,
+                        apiResponseData: visaResponse.data
+                    }),
+                };
             }
             
-            const errorResult = {
-                nationality: nationality,
-                destination: destination,
-                visaStatus: visaStatus,
-                visaMessage: errorMessage,
-                additionalInfo: errorInfo,
-                stayDuration: 'Contact embassy',
-                requirements: ['Check embassy website'],
-                cached: false,
-                timestamp: new Date().toISOString(),
-                source: 'api_error',
-                errorCode: apiError.response?.status,
-                apiSuccess: false
-            };
+        } catch (apiError) {
+            console.error('💥 ===== API REQUEST EXCEPTION =====');
+            console.error('  - Error Type:', apiError.constructor.name);
+            console.error('  - Error Message:', apiError.message);
+            console.error('  - Error Code:', apiError.code);
+            console.error('  - Response Status:', apiError.response?.status);
+            console.error('  - Response Data:', apiError.response?.data);
+            console.error('  - Request Config:', {
+                url: apiError.config?.url,
+                method: apiError.config?.method,
+                params: apiError.config?.params
+            });
             
-            console.log('📤 Returning error result:', errorResult);
+            let errorMessage = 'Network error';
+            let errorInfo = 'Failed to connect to visa API.';
+            let visaStatus = 'network_error';
             
+            if (apiError.code === 'ENOTFOUND') {
+                errorMessage = 'DNS resolution failed';
+                errorInfo = 'Could not resolve visa API hostname.';
+                visaStatus = 'dns_error';
+            } else if (apiError.code === 'ECONNREFUSED') {
+                errorMessage = 'Connection refused';
+                errorInfo = 'Visa API server refused connection.';
+                visaStatus = 'connection_refused';
+            } else if (apiError.code === 'ETIMEDOUT') {
+                errorMessage = 'Request timeout';
+                errorInfo = 'Visa API request timed out after 20 seconds.';
+                visaStatus = 'timeout';
+            } else if (apiError.response?.status) {
+                errorMessage = `HTTP ${apiError.response.status} error`;
+                errorInfo = `API returned ${apiError.response.status}`;
+                visaStatus = 'http_error';
+            }
+            
+            console.log('📤 ===== RETURNING NETWORK ERROR =====');
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(errorResult),
+                body: JSON.stringify({
+                    nationality: nationality,
+                    destination: destination,
+                    visaStatus: visaStatus,
+                    visaMessage: errorMessage,
+                    additionalInfo: errorInfo,
+                    stayDuration: 'Contact embassy',
+                    requirements: ['Check embassy website', 'Contact consulate'],
+                    cached: false,
+                    timestamp: new Date().toISOString(),
+                    source: 'network_error',
+                    apiSuccess: false,
+                    errorCode: apiError.code,
+                    errorMessage: apiError.message
+                }),
             };
         }
     } catch (error) {
-        console.error('💥 Fatal function error:', error);
+        console.error('💥 ===== FATAL FUNCTION ERROR =====');
+        console.error(error);
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({
                 nationality: event.queryStringParameters?.nationality || 'Unknown',
                 destination: event.queryStringParameters?.destination || 'Unknown',
-                visaStatus: 'service_error',
-                visaMessage: 'Visa service temporarily unavailable',
-                additionalInfo: 'Internal service error occurred.',
+                visaStatus: 'fatal_error',
+                visaMessage: 'Internal service error',
+                additionalInfo: 'An unexpected error occurred in the visa service.',
                 stayDuration: 'Contact embassy',
                 requirements: ['Check embassy website'],
                 cached: false,
@@ -236,11 +312,11 @@ exports.handler = async (event, context) => {
     }
 };
 
-// SIMPLIFIED: Cache functions
+// Helper functions - MINIMAL IMPLEMENTATION
 function getCachedResult(cacheKey) {
     const cached = apiCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-        console.log(`📦 Cache hit for: ${cacheKey}`);
+        console.log(`💾 Cache hit for: ${cacheKey}`);
         return cached.data;
     }
     if (cached) {
@@ -258,101 +334,60 @@ function setCacheResult(cacheKey, data) {
     console.log(`💾 Cached result for: ${cacheKey}`);
 
     // Prevent memory leaks
-    if (apiCache.size > 50) {
+    if (apiCache.size > 10) {
         const firstKey = apiCache.keys().next().value;
         apiCache.delete(firstKey);
     }
 }
 
-// SIMPLIFIED: Rate limiting functions
-function canMakeAPICall() {
-    const now = Date.now();
-
-    console.log('🔍 Rate limit check:', {
-        now,
-        lastCall: rateLimitTracker.lastCall,
-        resetTime: rateLimitTracker.resetTime,
-        timeSinceLastCall: now - rateLimitTracker.lastCall,
-        minInterval: rateLimitTracker.minInterval
-    });
-
-    // Check if we're in a timeout period
-    if (rateLimitTracker.resetTime > 0 && rateLimitTracker.resetTime > now) {
-        console.log('❌ In timeout period');
-        return false;
-    }
-
-    // Reset timeout if it has passed
-    if (rateLimitTracker.resetTime > 0 && rateLimitTracker.resetTime <= now) {
-        console.log('✅ Timeout period ended, resetting');
-        rateLimitTracker.resetTime = 0;
-        rateLimitTracker.callCount = 0;
-    }
-
-    // SIMPLIFIED: Check minimum interval (only if we've made a call before)
-    if (rateLimitTracker.lastCall > 0 && (now - rateLimitTracker.lastCall) < rateLimitTracker.minInterval) {
-        console.log('❌ Too soon since last call');
-        return false;
-    }
-
-    console.log('✅ Rate limit check passed');
-    return true;
-}
-
-function updateRateLimitTracker() {
-    const now = Date.now();
-    rateLimitTracker.lastCall = now;
-    rateLimitTracker.callCount++;
-
-    console.log('📊 Rate limit updated:', {
-        lastCall: now,
-        callCount: rateLimitTracker.callCount
-    });
-
-    // Simple protection: if too many calls, set a reset time
-    if (rateLimitTracker.callCount > 20) {
-        rateLimitTracker.resetTime = now + (10 * 60 * 1000); // 10 minutes
-        rateLimitTracker.callCount = 0;
-        console.log('⏰ Too many calls - setting 10 minute timeout');
-    }
-}
-
-function processRapidAPIResponse(visaData) {
-    console.log('🔄 Processing API response:', visaData);
+function processAPIResponse(visaData) {
+    console.log('🔄 ===== PROCESSING API RESPONSE =====');
+    console.log('Raw data:', visaData);
 
     let status = 'unknown';
     let message = 'Check visa requirements';
     let duration = 'Varies';
     let additionalInfo = '';
 
-    // Handle different response formats
+    // Try different possible field names from RapidAPI
     const visaRequirement = visaData.visa_requirement ||
         visaData.status ||
         visaData.result ||
         visaData.visa_status ||
-        visaData.requirement;
+        visaData.requirement ||
+        visaData.visa_type ||
+        visaData.travel_requirement;
 
-    console.log('📋 Visa requirement found:', visaRequirement);
+    console.log('🔍 Found visa requirement field:', visaRequirement);
 
     if (typeof visaRequirement === 'string') {
         const requirement = visaRequirement.toLowerCase().trim();
 
-        if (requirement.includes('visa free') || requirement.includes('no visa required') || requirement.includes('visa not required')) {
+        if (requirement.includes('visa free') || 
+            requirement.includes('no visa required') || 
+            requirement.includes('visa not required') ||
+            requirement.includes('visa-free')) {
             status = 'visa_free';
-            message = 'No visa required for tourism/business';
-            duration = visaData.max_stay || visaData.duration || '90 days';
-            additionalInfo = 'Visa-free entry for short-term visits.';
-        } else if (requirement.includes('visa required') || requirement.includes('visa is required')) {
+            message = 'No visa required';
+            duration = visaData.max_stay || visaData.duration || visaData.stay_duration || '90 days';
+            additionalInfo = 'Visa-free entry for tourism/business.';
+        } else if (requirement.includes('visa required') || 
+                   requirement.includes('visa is required') ||
+                   requirement.includes('tourist visa required')) {
             status = 'visa_required';
-            message = 'Tourist visa required before travel';
+            message = 'Visa required before travel';
             duration = visaData.max_stay || visaData.duration || 'Varies';
-            additionalInfo = 'Apply for tourist visa at embassy/consulate before departure.';
-        } else if (requirement.includes('e-visa') || requirement.includes('electronic visa') || requirement.includes('evisa')) {
+            additionalInfo = 'Tourist visa must be obtained before travel.';
+        } else if (requirement.includes('e-visa') || 
+                   requirement.includes('electronic visa') || 
+                   requirement.includes('evisa') ||
+                   requirement.includes('e-tourist visa')) {
             status = 'e_visa';
-            message = 'Electronic visa required (apply online)';
+            message = 'Electronic visa required';
             duration = visaData.max_stay || visaData.duration || '30 days';
-            additionalInfo = 'Apply for e-visa online before travel.';
-        } else if (requirement.includes('visa on arrival')) {
+            additionalInfo = 'Apply for electronic visa online.';
+        } else if (requirement.includes('visa on arrival') ||
+                   requirement.includes('arrival visa')) {
             status = 'visa_on_arrival';
             message = 'Visa available on arrival';
             duration = visaData.max_stay || visaData.duration || '30 days';
@@ -373,11 +408,11 @@ function processRapidAPIResponse(visaData) {
 
 function getAdditionalInfo(visaStatus) {
     const infoMap = {
-        'visa_free': 'No visa required for short-term tourism or business visits.',
-        'visa_required': 'Tourist visa must be obtained before travel.',
-        'e_visa': 'Electronic visa can be applied for online.',
-        'visa_on_arrival': 'Visa can be obtained at the port of entry.',
-        'unknown': 'Visa requirements could not be determined.'
+        'visa_free': 'No visa required for short-term visits.',
+        'visa_required': 'Visa must be obtained before travel.',
+        'e_visa': 'Electronic visa can be applied online.',
+        'visa_on_arrival': 'Visa available at port of entry.',
+        'unknown': 'Visa requirements could not be determined from API.'
     };
 
     return infoMap[visaStatus] || infoMap['unknown'];
@@ -392,20 +427,21 @@ function getRequirements(visaStatus) {
         ],
         'visa_required': [
             'Valid passport (6+ months validity)',
-            'Completed visa application',
-            'Visa application fee',
+            'Visa application form',
+            'Visa fee payment',
             'Supporting documents'
         ],
         'e_visa': [
             'Valid passport (6+ months validity)',
             'Online application',
             'Digital passport photo',
-            'Credit card for payment'
+            'Payment card'
         ],
         'visa_on_arrival': [
             'Valid passport (6+ months validity)',
             'Visa fee (cash)',
-            'Return ticket'
+            'Return ticket',
+            'Passport photos'
         ],
         'unknown': [
             'Valid passport',
