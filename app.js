@@ -1,34 +1,9 @@
+// Travel Packer - Main Application Logic
 // API Configuration
 const API_BASE = window.location.hostname.includes('localhost') ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
 
-// RAPIDAPI SUPPORTED COUNTRIES ONLY - Used for both nationality AND destination
-const RAPIDAPI_COUNTRIES = [
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
-    "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
-    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon",
-    "Canada", "Cape Verde", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
-    "Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
-    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
-    "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
-    "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
-    "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
-    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
-    "Lithuania", "Luxembourg", "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
-    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
-    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
-    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
-    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
-    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
-    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
-    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
-    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-];
-
-// SIMPLIFIED API Functions - Countries only, API only
+// API Functions
 async function getWeatherData(destination, departureDate, returnDate) {
-    console.log('🌤️ Weather request for country:', destination);
-
     try {
         const response = await fetch(`${API_BASE}/weather?destination=${encodeURIComponent(destination)}&departureDate=${departureDate}&returnDate=${returnDate}`);
         
@@ -40,7 +15,7 @@ async function getWeatherData(destination, departureDate, returnDate) {
     } catch (error) {
         console.error('Weather API Error:', error);
         return {
-            location: { name: destination, country: destination },
+            location: { name: destination, country: 'Unknown' },
             current: {
                 temperature: 20,
                 description: 'Weather data unavailable',
@@ -60,52 +35,23 @@ async function getWeatherData(destination, departureDate, returnDate) {
 }
 
 async function getVisaData(nationality, destination) {
-    console.log('🛂 ===== API-ONLY VISA REQUEST =====');
-    console.log('📍 Nationality:', nationality);
-    console.log('📍 Destination:', destination);
-    console.log('🔗 API_BASE:', API_BASE);
-
     try {
-        // SIMPLIFIED: Direct country-to-country API call ONLY
-        const url = `${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`;
-        console.log('🔗 Visa API URL:', url);
-        
-        console.log('🚀 Making visa API call (no fallback)...');
-        const response = await fetch(url);
-        
-        console.log('📊 Visa response status:', response.status);
-        console.log('📋 Visa response ok:', response.ok);
+        const response = await fetch(`${API_BASE}/visa?nationality=${encodeURIComponent(nationality)}&destination=${encodeURIComponent(destination)}`);
         
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Visa API Error:', errorText);
-            throw new Error(`Visa API returned ${response.status}: ${errorText}`);
+            throw new Error(`Visa API returned ${response.status}`);
         }
         
-        const data = await response.json();
-        console.log('✅ Visa API Response:', data);
-        
-        return data;
+        return await response.json();
     } catch (error) {
-        console.error('💥 Visa API Error:', error);
-        
-        // SIMPLIFIED ERROR HANDLING - No fallback database
+        console.error('Visa API Error:', error);
         return {
             nationality: nationality,
             destination: destination,
-            visaStatus: 'api_unavailable',
-            visaMessage: 'Visa service temporarily unavailable',
-            additionalInfo: `Unable to retrieve visa requirements at this time. Please check embassy websites directly. Error: ${error.message}`,
-            stayDuration: 'Contact embassy',
-            requirements: [
-                'Check embassy website',
-                'Contact consulate directly',
-                'Verify current requirements'
-            ],
-            source: 'error_fallback',
-            cached: false,
-            timestamp: new Date().toISOString(),
-            debugError: error.message
+            visaStatus: 'unknown',
+            visaMessage: 'Check with embassy - service temporarily unavailable',
+            additionalInfo: 'Please verify visa requirements with the embassy',
+            stayDuration: 'Check embassy guidelines'
         };
     }
 }
@@ -125,7 +71,7 @@ async function getRecommendations(destination, weather, tripType, duration, acti
                 activities
             })
         });
-
+        
         if (!response.ok) {
             throw new Error(`Recommendations API returned ${response.status}`);
         }
@@ -143,6 +89,15 @@ class TravelPackingApp {
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
         this.isGenerating = false;
+
+        // Sample data for countries and destinations
+        this.countries = [
+            "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "South Korea", "China", "India", "Brazil", "Mexico", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", "Switzerland", "Austria", "New Zealand", "Singapore", "Hong Kong", "South Africa", "UAE", "Saudi Arabia", "Russia", "Turkey", "Greece", "Portugal"
+        ];
+
+        this.sampleDestinations = [
+            "Paris, France", "Tokyo, Japan", "New York, USA", "London, UK", "Sydney, Australia", "Rome, Italy", "Barcelona, Spain", "Amsterdam, Netherlands"
+        ];
 
         this.packingCategories = {
             documents: {
@@ -214,13 +169,14 @@ class TravelPackingApp {
     }
 
     init() {
-        console.log('🚀 Initializing COUNTRIES-ONLY Travel App...');
+        console.log('Initializing Travel Packing App...');
         this.loadSavedTheme();
         this.setupEventListeners();
-        this.populateCountryDropdowns(); // SIMPLIFIED: Same list for both
+        this.populateCountryDropdown();
+        this.setupDestinationSuggestions();
         this.setMinDates();
         this.loadSavedProgress();
-        console.log('✅ Countries-only app initialized successfully');
+        console.log('App initialized successfully');
     }
 
     loadSavedTheme() {
@@ -275,7 +231,7 @@ class TravelPackingApp {
                 retryBtn.addEventListener('click', () => this.retryGeneration());
             }
 
-            console.log('✅ Event listeners set up successfully');
+            console.log('Event listeners set up successfully');
         } catch (error) {
             console.error('Error setting up event listeners:', error);
         }
@@ -295,44 +251,70 @@ class TravelPackingApp {
         }
     }
 
-    // SIMPLIFIED: Countries only for both dropdowns
-    populateCountryDropdowns() {
+    populateCountryDropdown() {
         try {
-            // Populate nationality dropdown
-            const nationalitySelect = document.getElementById('nationality');
-            if (nationalitySelect) {
-                // Clear existing options except the first one
-                while (nationalitySelect.children.length > 1) {
-                    nationalitySelect.removeChild(nationalitySelect.lastChild);
-                }
-                
-                RAPIDAPI_COUNTRIES.forEach(country => {
+            const select = document.getElementById('nationality');
+            if (select) {
+                this.countries.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country;
                     option.textContent = country;
-                    nationalitySelect.appendChild(option);
+                    select.appendChild(option);
                 });
-                console.log(`✅ Populated nationality with ${RAPIDAPI_COUNTRIES.length} countries`);
-            }
-
-            // Populate destination dropdown (same countries)
-            const destinationSelect = document.getElementById('destination');
-            if (destinationSelect) {
-                // Clear existing options except the first one
-                while (destinationSelect.children.length > 1) {
-                    destinationSelect.removeChild(destinationSelect.lastChild);
-                }
-                
-                RAPIDAPI_COUNTRIES.forEach(country => {
-                    const option = document.createElement('option');
-                    option.value = country;
-                    option.textContent = country;
-                    destinationSelect.appendChild(option);
-                });
-                console.log(`✅ Populated destination with ${RAPIDAPI_COUNTRIES.length} countries`);
             }
         } catch (error) {
-            console.error('Error populating country dropdowns:', error);
+            console.error('Error populating country dropdown:', error);
+        }
+    }
+
+    setupDestinationSuggestions() {
+        try {
+            const input = document.getElementById('destination');
+            const suggestionsList = document.getElementById('destination-suggestions');
+
+            if (!input || !suggestionsList) return;
+
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                if (query.length < 2) {
+                    suggestionsList.classList.remove('show');
+                    return;
+                }
+
+                const matches = this.sampleDestinations.filter(dest => 
+                    dest.toLowerCase().includes(query)
+                );
+
+                if (matches.length > 0) {
+                    suggestionsList.innerHTML = matches.map(dest => 
+                        `<div class="suggestion-item" onclick="app.selectDestination('${dest}')">${dest}</div>`
+                    ).join('');
+                    suggestionsList.classList.add('show');
+                } else {
+                    suggestionsList.classList.remove('show');
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.remove('show');
+                }
+            });
+        } catch (error) {
+            console.error('Error setting up destination suggestions:', error);
+        }
+    }
+
+    selectDestination(destination) {
+        const input = document.getElementById('destination');
+        const suggestionsList = document.getElementById('destination-suggestions');
+        
+        if (input) {
+            input.value = destination;
+        }
+        if (suggestionsList) {
+            suggestionsList.classList.remove('show');
         }
     }
 
@@ -382,13 +364,13 @@ class TravelPackingApp {
         }
     }
 
-    // SIMPLIFIED: Main checklist generation - countries only, API only
+    // FIXED: Main checklist generation method
     async generateChecklist() {
         if (this.isGenerating) return;
         
         try {
             this.isGenerating = true;
-            console.log('🚀 ===== STARTING COUNTRIES-ONLY GENERATION =====');
+            console.log('Starting checklist generation...');
             
             // Get form element
             const form = document.getElementById('travel-form');
@@ -399,7 +381,7 @@ class TravelPackingApp {
             // Create FormData from form
             const formData = new FormData(form);
             
-            // Extract and validate data - SIMPLIFIED: Both are just country names
+            // Extract and validate data
             const tripData = {
                 destination: formData.get('destination')?.trim(),
                 nationality: formData.get('nationality')?.trim(),
@@ -409,8 +391,7 @@ class TravelPackingApp {
                 activities: formData.get('activities')?.trim() || ''
             };
             
-            console.log('📋 Countries-only form data:', tripData);
-            console.log('🎯 Direct country-to-country:', `${tripData.nationality} → ${tripData.destination}`);
+            console.log('Form data extracted:', tripData);
             
             // Validate required fields
             const requiredFields = ['destination', 'nationality', 'departureDate', 'returnDate', 'tripType'];
@@ -420,26 +401,15 @@ class TravelPackingApp {
                 throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
             }
             
-            // Validate countries are in supported list
-            if (!RAPIDAPI_COUNTRIES.includes(tripData.nationality)) {
-                throw new Error(`Nationality "${tripData.nationality}" is not supported. Please select from the dropdown.`);
-            }
-            if (!RAPIDAPI_COUNTRIES.includes(tripData.destination)) {
-                throw new Error(`Destination "${tripData.destination}" is not supported. Please select from the dropdown.`);
-            }
-            
             // Show loading state
             this.showLoadingState();
             
             // Calculate trip duration
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
-            console.log(`📅 Trip duration: ${duration} days`);
+            console.log(`Trip duration: ${duration} days`);
             
-            // API CALLS - Countries only, API only (no fallback database)
-            console.log('🔄 Starting API-only calls...');
-            console.log('🌤️ Weather call for country:', tripData.destination);
-            console.log('🛂 Visa call for countries:', `${tripData.nationality} → ${tripData.destination}`);
-            
+            // FIXED: Get weather and visa data first
+            console.log('Fetching weather and visa data...');
             const [weatherResult, visaResult] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
                 getVisaData(tripData.nationality, tripData.destination)
@@ -448,27 +418,20 @@ class TravelPackingApp {
             const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
             const visa = visaResult.status === 'fulfilled' ? visaResult.value : null;
             
-            console.log('🌤️ Weather result:', weather);
-            console.log('🛂 Visa result:', visa);
+            console.log('Weather data:', weather);
+            console.log('Visa data:', visa);
             
-            // Check if visa API actually failed
-            if (visa && visa.visaStatus === 'api_unavailable') {
-                console.log('⚠️ Visa API is unavailable - continuing with error message');
-            } else if (visa && visa.source === 'rapidapi_live') {
-                console.log('✅ Visa API call successful!');
-            }
-            
-            // Get recommendations
-            console.log('🤖 Getting AI recommendations...');
+            // FIXED: Now get recommendations with weather data
+            console.log('Getting recommendations with weather data...');
             const recommendations = await getRecommendations(
                 tripData.destination, 
-                weather,
+                weather, // Pass actual weather data
                 tripData.tripType, 
                 duration, 
                 tripData.activities
             );
             
-            console.log('🤖 Recommendations result:', recommendations);
+            console.log('Recommendations:', recommendations);
             
             // Store trip data
             this.currentTrip = {
@@ -483,7 +446,7 @@ class TravelPackingApp {
             this.displayResults();
             
         } catch (error) {
-            console.error('💥 Countries-only generation error:', error);
+            console.error('Error generating checklist:', error);
             this.showError(error.message || 'Failed to generate checklist');
         } finally {
             this.isGenerating = false;
@@ -536,7 +499,7 @@ class TravelPackingApp {
     }
 
     displayResults() {
-        console.log('📊 Displaying countries-only results...');
+        console.log('Displaying results...');
         
         const loadingSection = document.getElementById('loading-section');
         const resultsSection = document.getElementById('results-section');
@@ -634,14 +597,12 @@ class TravelPackingApp {
         }
         
         const visa = this.currentTrip.visa;
-        
-        // Map visa status to CSS classes - including API error states
+        // Map visa status to CSS classes
         const statusClassMap = {
             'visa_free': 'not-required',
             'visa_required': 'required',
             'e_visa': 'evisa',
             'visa_on_arrival': 'evisa',
-            'api_unavailable': 'unknown',
             'unknown': 'unknown'
         };
         const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
@@ -651,8 +612,6 @@ class TravelPackingApp {
                 <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
                 <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
                 <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
-                ${visa.source ? `<small class="visa-source">Source: ${visa.source}</small>` : ''}
-                ${visa.debugError ? `<small class="visa-debug">Debug: ${visa.debugError}</small>` : ''}
             </div>
         `;
     }
@@ -829,18 +788,5 @@ class TravelPackingApp {
     }
 }
 
-// ADD DEBUG FUNCTION FOR MANUAL TESTING
-window.debugVisaAPI = async function(nationality = 'China', destination = 'United States') {
-    console.log('🧪 ===== MANUAL VISA API TEST =====');
-    console.log(`🧪 Testing: ${nationality} → ${destination}`);
-
-    const result = await getVisaData(nationality, destination);
-    console.log('🧪 Manual test result:', result);
-
-    return result;
-};
-
 // Initialize the app
 const app = new TravelPackingApp();
-console.log('🎯 COUNTRIES-ONLY + API-ONLY APP LOADED');
-console.log('🧪 Use debugVisaAPI() to test visa API manually');
