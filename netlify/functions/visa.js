@@ -329,50 +329,52 @@ function cleanCountryName(country) {
 
 function processRapidAPIResponse(visaData) {
     console.log('Processing RapidAPI response:', visaData);
+    
+    // Extract the key fields from RapidAPI response
+    const visaRequirement = visaData.visa || '';
+    const stayDuration = visaData.stay_of || 'Varies';
+    const exceptionText = visaData.except_text || '';
+    const colorCode = visaData.color || '';
+    
+    // Determine visa status based on RapidAPI fields
     let status = 'unknown';
     let message = 'Check with embassy';
-    let duration = 'Varies';
     let additionalInfo = '';
-
-    // FIX: Use the correct field name 'visa' instead of 'visa_requirement'
-    const visaRequirement = visaData.visa || visaData.visa_requirement || visaData.status || visaData.result;
     
-    // FIX: Use the correct duration field 'stay_of'
-    duration = visaData.stay_of || visaData.max_stay || visaData.duration || 'Varies';
-
-    if (typeof visaRequirement === 'string') {
-        const requirement = visaRequirement.toLowerCase();
-        if (requirement.includes('visa free') || requirement.includes('no visa required')) {
-            status = 'visa_free';
-            message = 'No visa required for short stays';
-            additionalInfo = 'Visa-free entry for tourism/business purposes.';
-        } else if (requirement.includes('visa required')) {
-            status = 'visa_required';
-            message = 'Visa required before travel';
-            additionalInfo = 'Apply for visa at embassy/consulate before departure.';
-        } else if (requirement.includes('e-visa') || requirement.includes('electronic') || requirement.includes('evisa')) {
-            status = 'e_visa';
-            message = 'Electronic visa available online';
-            additionalInfo = 'Apply online for e-visa before travel.';
-        } else if (requirement.includes('visa on arrival')) {
-            status = 'visa_on_arrival';
-            message = 'Visa available on arrival';
-            additionalInfo = 'Visa can be obtained at port of entry.';
-        } else if (requirement.includes('visa on arrival / evisa')) {
-            // Handle the specific case from your log
-            status = 'visa_on_arrival';
-            message = 'Visa on arrival or eVisa available';
-            additionalInfo = 'You can obtain a visa on arrival or apply for an eVisa online before travel.';
-        }
+    // Parse the visa field properly
+    const visaText = visaRequirement.toLowerCase();
+    
+    if (visaText.includes('not required') || visaText.includes('visa free') || visaText.includes('exempt')) {
+        status = 'visa_free';
+        message = 'No visa required for short stays';
+        additionalInfo = 'Visa-free entry for tourism/business purposes.';
+    } else if (visaText.includes('required') && !visaText.includes('not')) {
+        status = 'visa_required';
+        message = 'Visa required before travel';
+        additionalInfo = 'Apply for visa at embassy/consulate before departure.';
+    } else if (visaText.includes('e-visa') || visaText.includes('electronic')) {
+        status = 'e_visa';
+        message = 'Electronic visa available online';
+        additionalInfo = 'Apply online for e-visa before travel.';
+    } else if (visaText.includes('on arrival')) {
+        status = 'visa_on_arrival';
+        message = 'Visa available on arrival';
+        additionalInfo = 'Visa can be obtained at port of entry.';
     }
-
+    
+    // Add exception text if available
+    if (exceptionText) {
+        additionalInfo += ` Note: ${exceptionText}`;
+    }
+    
     return {
-        status,
-        message,
-        duration,
-        additionalInfo: additionalInfo || getAdditionalInfo(status)
+        status: status,
+        message: message,
+        duration: stayDuration,
+        additionalInfo: additionalInfo
     };
 }
+
 
 
 function getFallbackData(nationality, destination) {
