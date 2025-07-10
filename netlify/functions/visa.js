@@ -362,9 +362,10 @@ function processRapidAPIResponse(visaData) {
         additionalInfo = 'Visa can be obtained at port of entry.';
     }
     
-    // Add exception text if available
+    // Add exception text with link preservation
     if (exceptionText) {
-        additionalInfo += ` Note: ${exceptionText}`;
+        const cleanExceptionText = processExceptionText(exceptionText);
+        additionalInfo += ` Note: ${cleanExceptionText}`;
     }
     
     return {
@@ -375,7 +376,24 @@ function processRapidAPIResponse(visaData) {
     };
 }
 
-
+// Helper function for processing HTML content with link preservation
+function processExceptionText(text) {
+    if (!text) return '';
+    
+    // Extract links and make them user-friendly
+    const linkRegex = /<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
+    
+    return text.replace(linkRegex, (match, url, linkText) => {
+        // Clean the link text and provide the URL
+        return `${linkText.trim()} (Link: ${url})`;
+    })
+    .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
 
 function getFallbackData(nationality, destination) {
     if (FALLBACK_VISA_DATABASE[nationality] && FALLBACK_VISA_DATABASE[nationality][destination]) {
