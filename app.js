@@ -259,6 +259,17 @@ class TravelPackingApp {
                 retryBtn.addEventListener('click', () => this.retryGeneration());
             }
 
+            // External link handler for visa section
+            document.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' && e.target.closest('.visa-info')) {
+                    const href = e.target.getAttribute('href');
+                    if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                        e.preventDefault();
+                        window.open(href, '_blank', 'noopener,noreferrer');
+                    }
+                }
+            });
+    
             console.log('Event listeners set up successfully');
         } catch (error) {
             console.error('Error setting up event listeners:', error);
