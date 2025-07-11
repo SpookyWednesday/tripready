@@ -121,7 +121,6 @@ async function getRecommendations(destination, weather, tripType, duration, acti
     }
 }
 
-// Add this function after getRecommendations and before class TravelPackingApp
 function convertLinksInText(text) {
     if (!text) return '';
     
@@ -129,9 +128,11 @@ function convertLinksInText(text) {
     const linkPattern = /\(Link: (https?:\/\/[^)]+)\)/g;
     
     return text.replace(linkPattern, (match, url) => {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="external-link">(Link)</a>`;
+        // Create a proper absolute link that won't be concatenated
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="external-link" onclick="event.stopPropagation(); window.open('${url}', '_blank'); return false;">(Link)</a>`;
     });
 }
+
 
 
 class TravelPackingApp {
@@ -236,47 +237,59 @@ class TravelPackingApp {
         }
     }
 
-    setupEventListeners() {
-        try {
-            // Theme selector
-            const themeSelector = document.getElementById('theme-selector');
-            if (themeSelector) {
-                themeSelector.addEventListener('change', (e) => {
-                    this.changeTheme(e.target.value);
-                });
-            }
-
-            // Form submission
-            const travelForm = document.getElementById('travel-form');
-            if (travelForm) {
-                travelForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.generateChecklist();
-                });
-            }
-
-            // Date validation
-            const departureDate = document.getElementById('departure-date');
-            const returnDate = document.getElementById('return-date');
-
-            if (departureDate) {
-                departureDate.addEventListener('change', () => this.validateDates());
-            }
-            if (returnDate) {
-                returnDate.addEventListener('change', () => this.validateDates());
-            }
-
-            // Retry button
-            const retryBtn = document.getElementById('retry-btn');
-            if (retryBtn) {
-                retryBtn.addEventListener('click', () => this.retryGeneration());
-            }
-
-            console.log('Event listeners set up successfully');
-        } catch (error) {
-            console.error('Error setting up event listeners:', error);
+setupEventListeners() {
+    try {
+        // Theme selector
+        const themeSelector = document.getElementById('theme-selector');
+        if (themeSelector) {
+            themeSelector.addEventListener('change', (e) => {
+                this.changeTheme(e.target.value);
+            });
         }
+
+        // Form submission
+        const travelForm = document.getElementById('travel-form');
+        if (travelForm) {
+            travelForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.generateChecklist();
+            });
+        }
+
+        // Date validation
+        const departureDate = document.getElementById('departure-date');
+        const returnDate = document.getElementById('return-date');
+        if (departureDate) {
+            departureDate.addEventListener('change', () => this.validateDates());
+        }
+        if (returnDate) {
+            returnDate.addEventListener('change', () => this.validateDates());
+        }
+
+        // Retry button
+        const retryBtn = document.getElementById('retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => this.retryGeneration());
+        }
+
+        // ADD THIS NEW CODE HERE - Event delegation for external links
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('external-link')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const url = e.target.getAttribute('href');
+                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                }
+            }
+        });
+
+        console.log('Event listeners set up successfully');
+    } catch (error) {
+        console.error('Error setting up event listeners:', error);
     }
+}
+
 
     changeTheme(themeName) {
         try {
@@ -608,8 +621,10 @@ updateVisaSection() {
     
     const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
     
-    // Process additional info to convert links
-    const processedAdditionalInfo = convertLinksInText(visa.additionalInfo || 'Please verify requirements with embassy');
+    // Process additional info to convert links - but keep HTML structure
+    const processedAdditionalInfo = visa.additionalInfo ? 
+        convertLinksInText(visa.additionalInfo) : 
+        'Please verify requirements with embassy';
     
     visaSection.innerHTML = `
         <div class="visa-requirement">
@@ -620,6 +635,7 @@ updateVisaSection() {
         </div>
     `;
 }
+
 
 
     updateChecklist() {
