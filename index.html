@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tripready - Smart Packing Checklist</title>
+    <title>Tripready</title>
     <link rel="stylesheet" href="style.css">
     <meta name="description" content="AI-powered travel packing assistant with real-time weather, visa, and personalized recommendations">
     <meta name="keywords" content="travel, packing, checklist, assistant, weather, visa">
@@ -13,25 +13,38 @@
         <!-- Header -->
         <header class="app-header">
             <div class="container">
-                <div class="flex justify-between items-center">
-                    <div class="header-content">
-                        <div class="flex items-center gap-8">
-                            <span class="logo-icon" style="font-size: 2rem;">✈️</span>
-                            <div>
-                                <h1 class="app-title">Tripready</h1>
-                                <p class="app-subtitle">Smart packing checklists for your perfect trip</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="header-layout">
+                    <!-- Theme Selector - Left positioned -->
                     <div class="theme-selector-container">
                         <label for="theme-selector" class="form-label">Theme</label>
                         <select id="theme-selector" class="form-control theme-selector">
-                            <option value="theme-default">Dark</option>
+                            <option value="theme-default">Default</option>
                             <option value="theme-light">Light</option>
+                            <option value="theme-dark">Dark</option>
                             <option value="theme-blue">Blue</option>
                             <option value="theme-green">Green</option>
+                            <option value="theme-purple">Purple</option>
+                            <option value="theme-violet">Violet</option>
+                            <option value="theme-orange">Orange</option>
+                            <option value="theme-pink">Pink</option>
+                            <option value="theme-teal">Teal</option>
+                            <option value="theme-red">Red</option>
                         </select>
                     </div>
+                    
+                    <!-- Centered Title and Logo -->
+                    <div class="header-center">
+                        <div class="header-content">
+                            <img src="./tripready-logo2.png" alt="Tripready Logo" class="logo-image" onerror="this.style.display='none';">
+                            <div class="title-group">
+                                <h1 class="app-title">Tripready</h1>
+                                <p class="app-subtitle">Your Intelligent Travel Assistant</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right spacer for balance -->
+                    <div class="header-spacer"></div>
                 </div>
             </div>
         </header>
