@@ -574,7 +574,7 @@ class TravelPackingApp {
         `;
     }
 
-    // FIXED: Updated visa section to properly handle links
+// FIXED: Updated visa section to properly handle links and new categories
     updateVisaSection() {
         const visaSection = document.querySelector('.visa-info');
         if (!visaSection) return;
@@ -585,18 +585,20 @@ class TravelPackingApp {
         }
 
         const visa = this.currentTrip.visa;
-        // Map visa status to CSS classes
+        // Map visa status to CSS classes (including new ETA/ESTA categories)
         const statusClassMap = {
             'visa_free': 'not-required',
             'visa_required': 'required',
             'e_visa': 'evisa',
+            'eta': 'evisa',        // NEW: ETA uses same styling as e_visa
+            'esta': 'evisa',       // NEW: ESTA uses same styling as e_visa
             'visa_on_arrival': 'evisa',
             'unknown': 'unknown'
         };
 
         const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
 
-        // NEW: Build links HTML properly
+        // Build links HTML properly
         let linksHtml = '';
         if (visa.links && visa.links.length > 0) {
             linksHtml = '<div class="visa-links">';
