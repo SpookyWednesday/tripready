@@ -607,13 +607,27 @@ updateVisaSection() {
     
     const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
     
-    // Decode HTML entities and fix malformed links
+    // Properly decode HTML entities and fix malformed links
     let processedAdditionalInfo = visa.additionalInfo || 'Please verify requirements with embassy';
     
-    // Decode HTML entities
+    // Decode HTML entities using textContent approach
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = processedAdditionalInfo;
-    processedAdditionalInfo = tempDiv.innerHTML;
+    processedAdditionalInfo = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Manually reconstruct the HTML with proper links
+    const linkPattern = /https?:\/\/[^\s]+/g;
+    const urls = processedAdditionalInfo.match(linkPattern);
+    
+    if (urls) {
+        urls.forEach(url => {
+            // Clean the URL (remove any trailing punctuation)
+            const cleanUrl = url.replace(/[.,;:!?]+$/, '');
+            processedAdditionalInfo = processedAdditionalInfo.replace(url, 
+                `<a href="${cleanUrl}" onclick="event.preventDefault(); window.open('${cleanUrl}', '_blank', 'noopener,noreferrer'); return false;" style="color: var(--color-primary); text-decoration: underline; cursor: pointer;">eVisa</a>`
+            );
+        });
+    }
     
     visaSection.innerHTML = `
         <div class="visa-requirement">
@@ -623,16 +637,8 @@ updateVisaSection() {
             <p><strong>Stay Duration:</strong> ${visa.stayDuration || 'Check embassy guidelines'}</p>
         </div>
     `;
-    
-    // Fix any remaining link issues and add proper event handlers
-    const links = visaSection.querySelectorAll('a[href^="http"]');
-    links.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.open(link.href, '_blank', 'noopener,noreferrer');
-        });
-    });
 }
+
 
 
 
