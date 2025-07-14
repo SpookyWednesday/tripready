@@ -86,7 +86,8 @@ async function getVisaData(nationality, destination) {
             visaStatus: 'unknown',
             visaMessage: 'Check with embassy - service temporarily unavailable',
             additionalInfo: 'Please verify visa requirements with the embassy',
-            stayDuration: 'Check embassy guidelines'
+            stayDuration: 'Check embassy guidelines',
+            links: []
         };
     }
 }
@@ -573,6 +574,7 @@ class TravelPackingApp {
         `;
     }
 
+    // FIXED: Updated visa section to properly handle links
     updateVisaSection() {
         const visaSection = document.querySelector('.visa-info');
         if (!visaSection) return;
@@ -594,11 +596,22 @@ class TravelPackingApp {
 
         const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
 
+        // NEW: Build links HTML properly
+        let linksHtml = '';
+        if (visa.links && visa.links.length > 0) {
+            linksHtml = '<div class="visa-links">';
+            visa.links.forEach(link => {
+                linksHtml += `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="visa-link">${link.text}</a>`;
+            });
+            linksHtml += '</div>';
+        }
+
         visaSection.innerHTML = `
             <div class="visa-requirement">
                 <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
                 <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
                 <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
+                ${linksHtml}
             </div>
         `;
     }

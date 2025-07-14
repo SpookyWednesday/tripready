@@ -83,7 +83,7 @@ const FALLBACK_VISA_DATABASE = {
         'Hong Kong': { status: 'visa_free', duration: '7 days', message: 'No visa required for short stays' }
     },
     'Hong Kong': {
-        'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
+        'Japan': { status: 'e_visa', duration: '90 days', message: 'Electronic visa available online', website: 'https://www.evisa.mofa.go.jp/personal/login' },
         'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
         'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
         'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
@@ -224,6 +224,8 @@ exports.handler = async (event, context) => {
                             additionalInfo: processedVisa.additionalInfo,
                             stayDuration: processedVisa.duration,
                             requirements: getRequirements(processedVisa.status),
+                            // NEW: Add structured links array
+                            links: processedVisa.links || [],
                             cached: false,
                             timestamp: new Date().toISOString(),
                             source: 'rapidapi_enhanced',
@@ -258,6 +260,8 @@ exports.handler = async (event, context) => {
                     additionalInfo: 'This is fallback data. Please verify with official sources.',
                     stayDuration: fallbackInfo.duration,
                     requirements: getRequirements(fallbackInfo.status),
+                    // NEW: Add structured links for fallback data too
+                    links: fallbackInfo.website ? [{ text: 'Apply Online', url: fallbackInfo.website }] : [],
                     cached: false,
                     timestamp: new Date().toISOString(),
                     source: 'fallback_database_enhanced',
@@ -284,6 +288,7 @@ exports.handler = async (event, context) => {
                     'Contact consulate for specific guidance',
                     'Verify requirements before travel'
                 ],
+                links: [],
                 cached: false,
                 timestamp: new Date().toISOString(),
                 source: 'service_unavailable',
@@ -305,6 +310,7 @@ exports.handler = async (event, context) => {
                 additionalInfo: 'Please try again later or check with embassy.',
                 stayDuration: 'Contact embassy',
                 requirements: ['Check embassy website', 'Contact consulate'],
+                links: [],
                 cached: false,
                 timestamp: new Date().toISOString(),
                 source: 'error_handler',
@@ -340,6 +346,7 @@ function processRapidAPIResponse(visaData) {
     let status = 'unknown';
     let message = 'Check with embassy';
     let additionalInfo = '';
+    let links = [];
     
     // Parse the visa field properly
     const visaText = visaRequirement.toLowerCase();
@@ -362,37 +369,70 @@ function processRapidAPIResponse(visaData) {
         additionalInfo = 'Visa can be obtained at port of entry.';
     }
     
-    // Add exception text with link preservation
+    // FIXED: Properly extract and structure links from exception text
     if (exceptionText) {
-        const cleanExceptionText = processExceptionText(exceptionText);
-        additionalInfo += ` Note: ${cleanExceptionText}`;
+        const extractedData = extractLinksAndText(exceptionText);
+        additionalInfo += ` ${extractedData.cleanText}`;
+        links = extractedData.links;
     }
     
     return {
         status: status,
         message: message,
         duration: stayDuration,
-        additionalInfo: additionalInfo
+        additionalInfo: additionalInfo.trim(),
+        links: links // NEW: Return structured links
     };
 }
 
-// Helper function for processing HTML content with link preservation
-function processExceptionText(text) {
-    if (!text) return '';
+// NEW: Improved function to properly extract links and clean text
+function extractLinksAndText(htmlText) {
+    if (!htmlText) return { cleanText: '', links: [] };
     
-    // Extract links and make them user-friendly
+    const links = [];
+    let cleanText = htmlText;
+    
+    // Extract all links with proper URL handling
     const linkRegex = /<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
+    let match;
     
-    return text.replace(linkRegex, (match, url, linkText) => {
-        // Clean the link text and provide the URL
-        return `${linkText.trim()} (Link: ${url})`;
-    })
-    .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim();
+    while ((match = linkRegex.exec(htmlText)) !== null) {
+        let url = match[1];
+        const linkText = match[2].replace(/<[^>]*>/g, '').trim();
+        
+        // Ensure URL is absolute
+        if (url.startsWith('//')) {
+            url = 'https:' + url;
+        } else if (url.startsWith('/')) {
+            // This might need domain context, but for now assume it's relative to a government site
+            url = 'https://www.mofa.go.jp' + url; // Adjust based on the actual domain
+        } else if (!url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        
+        links.push({
+            text: linkText || 'Click here',
+            url: url
+        });
+        
+        // Replace the link in the text with just the link text
+        cleanText = cleanText.replace(match[0], linkText);
+    }
+    
+    // Clean up remaining HTML
+    cleanText = cleanText
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    
+    return {
+        cleanText: cleanText,
+        links: links
+    };
 }
 
 function getFallbackData(nationality, destination) {
