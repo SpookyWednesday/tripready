@@ -369,12 +369,20 @@ function processRapidAPIResponse(visaData) {
         additionalInfo = 'Visa can be obtained at port of entry.';
     }
     
-    // FIXED: Properly extract and structure links from exception text
-    if (exceptionText) {
-        const extractedData = extractLinksAndText(exceptionText);
-        additionalInfo += ` ${extractedData.cleanText}`;
-        links = extractedData.links;
-    }
+// FIXED: Decode HTML entities first, then extract links
+if (exceptionText) {
+    // Decode HTML entities first
+    const decodedHtml = exceptionText
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&'); // Do this last
+        
+    const extractedData = extractLinksAndText(decodedHtml);
+    additionalInfo += ` ${extractedData.cleanText}`;
+    links = extractedData.links;
+}
     
     return {
         status: status,
