@@ -584,35 +584,45 @@ class TravelPackingApp {
         `;
     }
 
-    updateVisaSection() {
-        const visaSection = document.querySelector('.visa-info');
-        if (!visaSection) return;
-
-        if (!this.currentTrip.visa) {
-            visaSection.innerHTML = '<p>Visa information unavailable</p>';
-            return;
-        }
-
-        const visa = this.currentTrip.visa;
-        // Map visa status to CSS classes
-        const statusClassMap = {
-            'visa_free': 'not-required',
-            'visa_required': 'required',
-            'e_visa': 'evisa',
-            'visa_on_arrival': 'evisa',
-            'unknown': 'unknown'
-        };
-
-        const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
-
-        visaSection.innerHTML = `
-            <div class="visa-requirement">
-                <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
-                <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
-                <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
-            </div>
-        `;
+updateVisaSection() {
+    const visaSection = document.querySelector('.visa-info');
+    if (!visaSection) return;
+    
+    if (!this.currentTrip.visa) {
+        visaSection.innerHTML = '<p>Visa information unavailable</p>';
+        return;
     }
+    
+    const visa = this.currentTrip.visa;
+    
+    // Map visa status to CSS classes
+    const statusClassMap = {
+        'visa_free': 'not-required',
+        'visa_required': 'required',
+        'e_visa': 'evisa',
+        'visa_on_arrival': 'evisa',
+        'unknown': 'unknown'
+    };
+    
+    const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
+    
+    // Process the text to convert "(Link: URL)" to proper HTML links
+    let processedAdditionalInfo = visa.additionalInfo || 'Please verify requirements with embassy';
+    processedAdditionalInfo = processedAdditionalInfo.replace(
+        /\(Link: (https?:\/\/[^)]+)\)/g, 
+        '<a href="javascript:void(0)" onclick="window.open(\'$1\', \'_blank\', \'noopener,noreferrer\'); return false;" style="color: #3b82f6; text-decoration: underline; cursor: pointer;">[Link]</a>'
+    );
+    
+    visaSection.innerHTML = `
+        <div class="visa-requirement">
+            <div class="visa-status ${statusClass}">${visa.visaStatus || 'Unknown'}</div>
+            <p><strong>${visa.visaMessage || 'Check with embassy'}</strong></p>
+            <div class="visa-details">${processedAdditionalInfo}</div>
+            <p><strong>Stay Duration:</strong> ${visa.stayDuration || 'Check embassy guidelines'}</p>
+        </div>
+    `;
+}
+
 
     updateChecklist() {
         const checklistCategories = document.querySelector('.checklist-categories');
