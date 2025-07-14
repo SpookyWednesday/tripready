@@ -1557,4 +1557,61 @@ select.form-control {
   .form-section {
     margin-bottom: var(--space-8);
   }
+  /* NEW: Visa Links Styling - Add this to your style.css */
+
+.visa-links {
+  margin-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.visa-link {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-8) var(--space-12);
+  background: var(--theme-primary);
+  color: white !important;
+  text-decoration: none;
+  border-radius: var(--radius-base);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  transition: all var(--duration-fast) var(--ease-standard);
+  /* Mobile touch optimization */
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.visa-link:hover {
+  background: var(--theme-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  color: white !important;
+}
+
+.visa-link:active {
+  background: var(--theme-primary-active);
+  transform: translateY(0);
+}
+
+.visa-link::after {
+  content: '↗';
+  margin-left: var(--space-8);
+  font-size: var(--font-size-sm);
+  opacity: 0.8;
+}
+
+/* Mobile specific styles */
+@media (max-width: 640px) {
+  .visa-links {
+    margin-top: var(--space-8);
+  }
+  
+  .visa-link {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+}
 }
