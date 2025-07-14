@@ -259,18 +259,6 @@ class TravelPackingApp {
                 retryBtn.addEventListener('click', () => this.retryGeneration());
             }
 
-// Global handler for external links in visa section
-document.addEventListener('click', (e) => {
-    if (e.target.tagName === 'A' && 
-        e.target.closest('.visa-info') && 
-        e.target.href && 
-        (e.target.href.startsWith('http://') || e.target.href.startsWith('https://'))) {
-        e.preventDefault();
-        window.open(e.target.href, '_blank', 'noopener,noreferrer');
-    }
-});
-
-    
             console.log('Event listeners set up successfully');
         } catch (error) {
             console.error('Error setting up event listeners:', error);
@@ -585,62 +573,35 @@ document.addEventListener('click', (e) => {
         `;
     }
 
-updateVisaSection() {
-    const visaSection = document.querySelector('.visa-info');
-    if (!visaSection) return;
-    
-    if (!this.currentTrip.visa) {
-        visaSection.innerHTML = '<p>Visa information unavailable</p>';
-        return;
+    updateVisaSection() {
+        const visaSection = document.querySelector('.visa-info');
+        if (!visaSection) return;
+
+        if (!this.currentTrip.visa) {
+            visaSection.innerHTML = '<p>Visa information unavailable</p>';
+            return;
+        }
+
+        const visa = this.currentTrip.visa;
+        // Map visa status to CSS classes
+        const statusClassMap = {
+            'visa_free': 'not-required',
+            'visa_required': 'required',
+            'e_visa': 'evisa',
+            'visa_on_arrival': 'evisa',
+            'unknown': 'unknown'
+        };
+
+        const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
+
+        visaSection.innerHTML = `
+            <div class="visa-requirement">
+                <span class="visa-status ${statusClass}">${visa.visaMessage}</span>
+                <p>${visa.additionalInfo || 'Please verify requirements with embassy'}</p>
+                <small>Stay Duration: ${visa.stayDuration || 'Check embassy guidelines'}</small>
+            </div>
+        `;
     }
-    
-    const visa = this.currentTrip.visa;
-    
-    // Map visa status to CSS classes
-    const statusClassMap = {
-        'visa_free': 'not-required',
-        'visa_required': 'required',
-        'e_visa': 'evisa',
-        'visa_on_arrival': 'evisa',
-        'unknown': 'unknown'
-    };
-    
-    const statusClass = statusClassMap[visa.visaStatus] || 'unknown';
-    
-    // Properly decode HTML entities and fix malformed links
-    let processedAdditionalInfo = visa.additionalInfo || 'Please verify requirements with embassy';
-    
-    // Decode HTML entities using textContent approach
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = processedAdditionalInfo;
-    processedAdditionalInfo = tempDiv.textContent || tempDiv.innerText || '';
-    
-    // Manually reconstruct the HTML with proper links
-    const linkPattern = /https?:\/\/[^\s]+/g;
-    const urls = processedAdditionalInfo.match(linkPattern);
-    
-    if (urls) {
-        urls.forEach(url => {
-            // Clean the URL (remove any trailing punctuation)
-            const cleanUrl = url.replace(/[.,;:!?]+$/, '');
-            processedAdditionalInfo = processedAdditionalInfo.replace(url, 
-                `<a href="${cleanUrl}" onclick="event.preventDefault(); window.open('${cleanUrl}', '_blank', 'noopener,noreferrer'); return false;" style="color: var(--color-primary); text-decoration: underline; cursor: pointer;">eVisa</a>`
-            );
-        });
-    }
-    
-    visaSection.innerHTML = `
-        <div class="visa-requirement">
-            <div class="visa-status ${statusClass}">${visa.visaStatus || 'Unknown'}</div>
-            <p><strong>${visa.visaMessage || 'Check with embassy'}</strong></p>
-            <div class="visa-details">${processedAdditionalInfo}</div>
-            <p><strong>Stay Duration:</strong> ${visa.stayDuration || 'Check embassy guidelines'}</p>
-        </div>
-    `;
-}
-
-
-
 
     updateChecklist() {
         const checklistCategories = document.querySelector('.checklist-categories');
