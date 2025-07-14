@@ -54,85 +54,6 @@ function getCountryCode(countryName) {
     return countryCodes[countryName] || countryName.substring(0, 2).toUpperCase();
 }
 
-// EXPANDED Fallback database with popular travel routes including Hong Kong
-const FALLBACK_VISA_DATABASE = {
-    'United States': {
-        'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'Canada': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-        'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-        'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Malaysia': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-        'China': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' }
-    },
-    'China': {
-        'Japan': { status: 'visa_free', duration: '15 days', message: 'No visa required for short stays' },
-        'United States': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' },
-        'United Kingdom': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' },
-        'Germany': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' },
-        'France': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' },
-        'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'South Korea': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' },
-        'Malaysia': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Hong Kong': { status: 'visa_free', duration: '7 days', message: 'No visa required for short stays' }
-    },
-    'Hong Kong': {
-        'Japan': { status: 'e_visa', duration: '90 days', message: 'Electronic visa available online', website: 'https://www.evisa.mofa.go.jp/personal/login' },
-        'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United Kingdom': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-        'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Malaysia': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism' },
-        'China': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' }
-    },
-    'United Kingdom': {
-        'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-        'Hong Kong': { status: 'visa_free', duration: '180 days', message: 'No visa required for tourism/business' },
-        'Singapore': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'China': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' }
-    },
-    'Japan': {
-        'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Germany': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'France': { status: 'visa_free', duration: '90 days', message: 'No visa required (Schengen area)' },
-        'Australia': { status: 'e_visa', duration: '90 days', message: 'Electronic Travel Authority (ETA) required' },
-        'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'South Korea': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Hong Kong': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'China': { status: 'visa_required', duration: '90 days', message: 'Visa required before travel' }
-    },
-    'Macao': {
-        'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-    },
-    'Taiwan': {
-        'Japan': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United States': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'United Kingdom': { status: 'visa_free', duration: '90 days', message: 'No visa required for tourism/business' },
-        'Singapore': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' },
-        'Thailand': { status: 'visa_free', duration: '30 days', message: 'No visa required for tourism' }
-    }
-};
-
 exports.handler = async (event, context) => {
     // Enable CORS
     const headers = {
@@ -181,120 +102,89 @@ exports.handler = async (event, context) => {
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
         console.log('RapidAPI Key available:', !!RAPIDAPI_KEY);
 
-        if (RAPIDAPI_KEY) {
-            console.log('🚀 Attempting RapidAPI call with enhanced country support...');
-            try {
-                // Convert country names to proper country codes
-                const passportCode = getCountryCode(cleanNationality);
-                const destinationCode = getCountryCode(cleanDestination);
-                
-                console.log(`Country codes: ${cleanNationality} (${passportCode}) → ${cleanDestination} (${destinationCode})`);
-
-                const visaResponse = await axios.post(
-                    'https://visa-requirement.p.rapidapi.com/',
-                    `passport=${passportCode}&destination=${destinationCode}`,
-                    {
-                        headers: {
-                            'X-RapidAPI-Key': RAPIDAPI_KEY,
-                            'X-RapidAPI-Host': 'visa-requirement.p.rapidapi.com',
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        timeout: 15000
-                    }
-                );
-
-                console.log('✅ RapidAPI Response Status:', visaResponse.status);
-                console.log('✅ RapidAPI Data:', JSON.stringify(visaResponse.data, null, 2));
-
-                const visaData = visaResponse.data;
-                
-                // Process the response if successful
-                if (visaData && !visaData.error) {
-                    const processedVisa = processRapidAPIResponse(visaData);
-                    console.log('✅ Processed API Result:', processedVisa);
-
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify({
-                            nationality: nationality,
-                            destination: destination,
-                            visaStatus: processedVisa.status,
-                            visaMessage: processedVisa.message,
-                            additionalInfo: processedVisa.additionalInfo,
-                            stayDuration: processedVisa.duration,
-                            requirements: getRequirements(processedVisa.status),
-                            // NEW: Add structured links array
-                            links: processedVisa.links || [],
-                            cached: false,
-                            timestamp: new Date().toISOString(),
-                            source: 'rapidapi_enhanced',
-                            note: 'Real-time visa requirements with complete country support'
-                        }),
-                    };
-                } else {
-                    console.log('⚠️ RapidAPI returned error:', visaData.message || visaData.error);
-                }
-
-            } catch (apiError) {
-                console.error('❌ RapidAPI Error:');
-                console.error('- Status:', apiError.response?.status);
-                console.error('- Message:', apiError.message);
-                console.error('- Data:', apiError.response?.data);
-            }
-        }
-
-        // FALLBACK: Use expanded fallback database
-        console.log('📚 Using expanded fallback database...');
-        const fallbackInfo = getFallbackData(cleanNationality, cleanDestination);
-        if (fallbackInfo) {
-            console.log('✅ Found fallback data:', fallbackInfo);
+        if (!RAPIDAPI_KEY) {
+            console.log('❌ No RapidAPI key found');
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({
                     nationality: nationality,
                     destination: destination,
-                    visaStatus: fallbackInfo.status,
-                    visaMessage: fallbackInfo.message,
-                    additionalInfo: 'This is fallback data. Please verify with official sources.',
-                    stayDuration: fallbackInfo.duration,
-                    requirements: getRequirements(fallbackInfo.status),
-                    // NEW: Add structured links for fallback data too
-                    links: fallbackInfo.website ? [{ text: 'Apply Online', url: fallbackInfo.website }] : [],
+                    visaStatus: 'unknown',
+                    visaMessage: 'Unable to obtain visa information',
+                    additionalInfo: 'Visa service temporarily unavailable. Please check with embassy.',
+                    stayDuration: 'Contact embassy for guidance',
+                    requirements: ['Check embassy website', 'Contact consulate'],
+                    links: [],
                     cached: false,
                     timestamp: new Date().toISOString(),
-                    source: 'fallback_database_enhanced',
-                    note: 'API unavailable - showing enhanced cached data'
+                    source: 'no_api_key',
+                    error: 'Service configuration error'
                 }),
             };
         }
 
-        // FINAL FALLBACK: Unknown with helpful message
-        console.log('❓ All methods failed, returning unknown status');
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                nationality: nationality,
-                destination: destination,
-                visaStatus: 'unknown',
-                visaMessage: 'Unable to determine current visa requirements',
-                additionalInfo: 'Please check with the embassy or official government sources for the most current visa requirements.',
-                stayDuration: 'Contact embassy for guidance',
-                requirements: [
-                    'Valid passport (6+ months validity)',
-                    'Check embassy website for current requirements',
-                    'Contact consulate for specific guidance',
-                    'Verify requirements before travel'
-                ],
-                links: [],
-                cached: false,
-                timestamp: new Date().toISOString(),
-                source: 'service_unavailable',
-                note: 'All visa data sources temporarily unavailable'
-            }),
-        };
+        console.log('🚀 Attempting RapidAPI call with enhanced country support...');
+        try {
+            // Convert country names to proper country codes
+            const passportCode = getCountryCode(cleanNationality);
+            const destinationCode = getCountryCode(cleanDestination);
+            
+            console.log(`Country codes: ${cleanNationality} (${passportCode}) → ${cleanDestination} (${destinationCode})`);
+
+            const visaResponse = await axios.post(
+                'https://visa-requirement.p.rapidapi.com/',
+                `passport=${passportCode}&destination=${destinationCode}`,
+                {
+                    headers: {
+                        'X-RapidAPI-Key': RAPIDAPI_KEY,
+                        'X-RapidAPI-Host': 'visa-requirement.p.rapidapi.com',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    timeout: 15000
+                }
+            );
+
+            console.log('✅ RapidAPI Response Status:', visaResponse.status);
+            console.log('✅ RapidAPI Data:', JSON.stringify(visaResponse.data, null, 2));
+
+            const visaData = visaResponse.data;
+            
+            // Process the response if successful
+            if (visaData && !visaData.error) {
+                const processedVisa = processRapidAPIResponse(visaData);
+                console.log('✅ Processed API Result:', processedVisa);
+
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({
+                        nationality: nationality,
+                        destination: destination,
+                        visaStatus: processedVisa.status,
+                        visaMessage: processedVisa.message,
+                        additionalInfo: processedVisa.additionalInfo,
+                        stayDuration: processedVisa.duration,
+                        requirements: getRequirements(processedVisa.status),
+                        links: processedVisa.links || [],
+                        cached: false,
+                        timestamp: new Date().toISOString(),
+                        source: 'rapidapi_enhanced',
+                        note: 'Real-time visa requirements with complete country support'
+                    }),
+                };
+            } else {
+                console.log('⚠️ RapidAPI returned error:', visaData.message || visaData.error);
+                throw new Error('RapidAPI returned error response');
+            }
+
+        } catch (apiError) {
+            console.error('❌ RapidAPI Error:');
+            console.error('- Status:', apiError.response?.status);
+            console.error('- Message:', apiError.message);
+            console.error('- Data:', apiError.response?.data);
+            throw apiError; // Re-throw to be caught by outer try-catch
+        }
 
     } catch (error) {
         console.error('========== VISA API FATAL ERROR ==========');
@@ -305,10 +195,10 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({
                 nationality: event.queryStringParameters?.nationality || 'Unknown',
                 destination: event.queryStringParameters?.destination || 'Unknown',
-                visaStatus: 'error',
-                visaMessage: 'Service temporarily unavailable',
-                additionalInfo: 'Please try again later or check with embassy.',
-                stayDuration: 'Contact embassy',
+                visaStatus: 'unknown',
+                visaMessage: 'Unable to obtain visa information',
+                additionalInfo: 'Visa service temporarily unavailable. Please check with embassy.',
+                stayDuration: 'Contact embassy for guidance',
                 requirements: ['Check embassy website', 'Contact consulate'],
                 links: [],
                 cached: false,
@@ -340,60 +230,129 @@ function processRapidAPIResponse(visaData) {
     const visaRequirement = visaData.visa || '';
     const stayDuration = visaData.stay_of || 'Varies';
     const exceptionText = visaData.except_text || '';
-    const colorCode = visaData.color || '';
+    const rapidApiLink = visaData.link || '';
     
-    // Determine visa status based on RapidAPI fields
+    // Dynamic mapping based on RapidAPI visa field
     let status = 'unknown';
-    let message = 'Check with embassy';
+    let message = 'Unable to obtain visa information';
     let additionalInfo = '';
     let links = [];
     
-    // Parse the visa field properly
-    const visaText = visaRequirement.toLowerCase();
-    
-    if (visaText.includes('not required') || visaText.includes('visa free') || visaText.includes('exempt')) {
-        status = 'visa_free';
-        message = 'No visa required for short stays';
-        additionalInfo = 'Visa-free entry for tourism/business purposes.';
-    } else if (visaText.includes('required') && !visaText.includes('not')) {
-        status = 'visa_required';
-        message = 'Visa required before travel';
-        additionalInfo = 'Apply for visa at embassy/consulate before departure.';
-    } else if (visaText.includes('e-visa') || visaText.includes('electronic')) {
-        status = 'e_visa';
-        message = 'Electronic visa available online';
-        additionalInfo = 'Apply online for e-visa before travel.';
-    } else if (visaText.includes('on arrival')) {
-        status = 'visa_on_arrival';
-        message = 'Visa available on arrival';
-        additionalInfo = 'Visa can be obtained at port of entry.';
+    // FIXED: Direct mapping of RapidAPI visa values to categories
+    switch (visaRequirement.toLowerCase().trim()) {
+        case 'visa not required':
+            status = 'visa_free';
+            message = 'No visa required for short stays';
+            additionalInfo = 'Visa-free entry for tourism/business purposes.';
+            break;
+            
+        case 'eta':
+            status = 'eta';
+            message = 'Electronic Travel Authorization (ETA) required';
+            additionalInfo = 'Apply for ETA online before travel.';
+            break;
+            
+        case 'esta':
+            status = 'esta';
+            message = 'Electronic System for Travel Authorization (ESTA) required';
+            additionalInfo = 'Apply for ESTA online before travel.';
+            break;
+            
+        case 'visa required':
+            status = 'visa_required';
+            message = 'Visa required before travel';
+            additionalInfo = 'Apply for visa at embassy/consulate before departure.';
+            break;
+            
+        case 'e-visa':
+        case 'evisa':
+        case 'electronic visa':
+            status = 'e_visa';
+            message = 'Electronic visa available online';
+            additionalInfo = 'Apply online for e-visa before travel.';
+            break;
+            
+        case 'visa on arrival':
+        case 'on arrival':
+            status = 'visa_on_arrival';
+            message = 'Visa available on arrival';
+            additionalInfo = 'Visa can be obtained at port of entry.';
+            break;
+            
+        default:
+            // Try partial matching for edge cases
+            const visaText = visaRequirement.toLowerCase();
+            if (visaText.includes('not required') || visaText.includes('visa free') || visaText.includes('exempt')) {
+                status = 'visa_free';
+                message = 'No visa required for short stays';
+                additionalInfo = 'Visa-free entry for tourism/business purposes.';
+            } else if (visaText.includes('eta')) {
+                status = 'eta';
+                message = 'Electronic Travel Authorization (ETA) required';
+                additionalInfo = 'Apply for ETA online before travel.';
+            } else if (visaText.includes('esta')) {
+                status = 'esta';
+                message = 'Electronic System for Travel Authorization (ESTA) required';
+                additionalInfo = 'Apply for ESTA online before travel.';
+            } else if (visaText.includes('required')) {
+                status = 'visa_required';
+                message = 'Visa required before travel';
+                additionalInfo = 'Apply for visa at embassy/consulate before departure.';
+            } else if (visaText.includes('e-visa') || visaText.includes('electronic')) {
+                status = 'e_visa';
+                message = 'Electronic visa available online';
+                additionalInfo = 'Apply online for e-visa before travel.';
+            } else if (visaText.includes('on arrival')) {
+                status = 'visa_on_arrival';
+                message = 'Visa available on arrival';
+                additionalInfo = 'Visa can be obtained at port of entry.';
+            } else {
+                console.log('⚠️ Unrecognized visa requirement:', visaRequirement);
+                status = 'unknown';
+                message = 'Unable to obtain visa information';
+                additionalInfo = 'Please check with embassy for current requirements.';
+            }
+            break;
     }
     
-// FIXED: Decode HTML entities first, then extract links
-if (exceptionText) {
-    // Decode HTML entities first
-    const decodedHtml = exceptionText
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&amp;/g, '&'); // Do this last
-        
-    const extractedData = extractLinksAndText(decodedHtml);
-    additionalInfo += ` ${extractedData.cleanText}`;
-    links = extractedData.links;
-}
+    // Handle RapidAPI's direct link field
+    if (rapidApiLink && rapidApiLink.trim() && rapidApiLink !== '') {
+        links.push({
+            text: 'Apply Online',
+            url: rapidApiLink.trim()
+        });
+    }
+    
+    // Handle exception text with existing HTML entity decoding logic
+    if (exceptionText) {
+        // Decode HTML entities first
+        const decodedHtml = exceptionText
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&'); // Do this last
+            
+        const extractedData = extractLinksAndText(decodedHtml);
+        if (extractedData.cleanText) {
+            additionalInfo += ` ${extractedData.cleanText}`;
+        }
+        // Add extracted links to existing links array
+        if (extractedData.links && extractedData.links.length > 0) {
+            links = links.concat(extractedData.links);
+        }
+    }
     
     return {
         status: status,
         message: message,
         duration: stayDuration,
         additionalInfo: additionalInfo.trim(),
-        links: links // NEW: Return structured links
+        links: links
     };
 }
 
-// NEW: Improved function to properly extract links and clean text
+// Improved function to properly extract links and clean text
 function extractLinksAndText(htmlText) {
     if (!htmlText) return { cleanText: '', links: [] };
     
@@ -450,24 +409,6 @@ function extractLinksAndText(htmlText) {
     };
 }
 
-function getFallbackData(nationality, destination) {
-    if (FALLBACK_VISA_DATABASE[nationality] && FALLBACK_VISA_DATABASE[nationality][destination]) {
-        return FALLBACK_VISA_DATABASE[nationality][destination];
-    }
-    return null;
-}
-
-function getAdditionalInfo(visaStatus) {
-    const infoMap = {
-        'visa_free': 'No visa required for short-term tourism or business visits. Ensure passport validity of at least 6 months.',
-        'visa_required': 'Visa must be obtained before travel. Apply at embassy/consulate with sufficient processing time.',
-        'e_visa': 'Electronic visa can be applied for online. Print approval and carry during travel.',
-        'visa_on_arrival': 'Visa can be obtained at the port of entry. Have required documents and fees ready.',
-        'unknown': 'Visa requirements change frequently. Always verify current requirements with official sources.'
-    };
-    return infoMap[visaStatus] || infoMap['unknown'];
-}
-
 function getRequirements(visaStatus) {
     const requirementsMap = {
         'visa_free': [
@@ -489,6 +430,18 @@ function getRequirements(visaStatus) {
             'Online application completion',
             'Credit card for payment',
             'Email for approval receipt'
+        ],
+        'eta': [
+            'Valid passport (6+ months validity)',
+            'Online ETA application',
+            'Credit card for payment',
+            'Email for approval receipt'
+        ],
+        'esta': [
+            'Valid passport (6+ months validity)',
+            'Online ESTA application',
+            'Credit card for payment',
+            'Travel authorization approval'
         ],
         'visa_on_arrival': [
             'Valid passport (6+ months validity)',
