@@ -393,27 +393,34 @@ function extractLinksAndText(htmlText) {
     let cleanText = htmlText;
     
     // Extract all links with proper URL handling
-    const linkRegex = /<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
+    const linkRegex = /<a[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi;
     let match;
     
     while ((match = linkRegex.exec(htmlText)) !== null) {
         let url = match[1];
         const linkText = match[2].replace(/<[^>]*>/g, '').trim();
         
+        // CRITICAL FIX: Clean the URL of any surrounding quotes or escape characters
+        url = url.replace(/^["']+|["']+$/g, ''); // Remove leading/trailing quotes
+        url = url.replace(/\\"/g, '"'); // Unescape quotes
+        url = url.trim(); // Remove whitespace
+        
         // Ensure URL is absolute
         if (url.startsWith('//')) {
             url = 'https:' + url;
-        } else if (url.startsWith('/')) {
-            // This might need domain context, but for now assume it's relative to a government site
-            url = 'https://www.mofa.go.jp' + url; // Adjust based on the actual domain
-        } else if (!url.startsWith('http')) {
+        } else if (url.startsWith('/') && !url.startsWith('//')) {
+            url = 'https://www.mofa.go.jp' + url;
+        } else if (!url.startsWith('http') && !url.startsWith('//')) {
             url = 'https://' + url;
         }
         
-        links.push({
-            text: linkText || 'Click here',
-            url: url
-        });
+        // Additional validation: Only add if URL looks valid
+        if (url && url.length > 3 && !url.includes('"')) {
+            links.push({
+                text: linkText || 'Apply Online',
+                url: url
+            });
+        }
         
         // Replace the link in the text with just the link text
         cleanText = cleanText.replace(match[0], linkText);
