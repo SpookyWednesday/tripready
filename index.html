@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tripready</title>
+    <title>Tripready - Smart Packing Checklist</title>
     <link rel="stylesheet" href="style.css">
     <meta name="description" content="AI-powered travel packing assistant with real-time weather, visa, and personalized recommendations">
     <meta name="keywords" content="travel, packing, checklist, assistant, weather, visa">
@@ -14,9 +14,22 @@
         <header class="app-header">
             <div class="container">
                 <div class="header-layout">
-                    <!-- Theme Selector - Left positioned -->
+                    <!-- Left spacer for balance -->
+                    <div class="header-spacer"></div>
+                    
+                    <!-- Centered Title and Logo -->
+                    <div class="header-center">
+                        <div class="header-content">
+                            <img src="./tripready-logo2.png" alt="Tripready Logo" class="logo-image" onerror="this.style.display='none';">
+                            <div class="title-group">
+                                <h1 class="app-title">Tripready</h1>
+                                <p class="app-subtitle">Your Intelligent Travel Assistant</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Selector - Right positioned and subtle -->
                     <div class="theme-selector-container">
-                        <label for="theme-selector" class="form-label">Theme</label>
                         <select id="theme-selector" class="form-control theme-selector">
                             <option value="theme-default">Default</option>
                             <option value="theme-light">Light</option>
@@ -31,20 +44,6 @@
                             <option value="theme-red">Red</option>
                         </select>
                     </div>
-                    
-                    <!-- Centered Title and Logo -->
-                    <div class="header-center">
-                        <div class="header-content">
-                            <img src="./tripready-logo2.png" alt="Tripready Logo" class="logo-image" onerror="this.style.display='none';">
-                            <div class="title-group">
-                                <h1 class="app-title">Tripready</h1>
-                                <p class="app-subtitle">Your Intelligent Travel Assistant</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Right spacer for balance -->
-                    <div class="header-spacer"></div>
                 </div>
             </div>
         </header>
@@ -116,8 +115,8 @@
                                 </div>
                                 
                                 <button type="submit" class="btn btn--primary btn--lg btn--full-width generate-btn">
-                                    <span class="btn-text">Generate My Packing Checklist</span>
-                                    <span class="btn-icon">📋</span>
+                                    <span class="btn-text">Take me away</span>
+                                    <span class="btn-icon">✈️</span>
                                     <div class="btn-loading">
                                         <div class="loading-spinner"></div>
                                         <span>Generating...</span>
