@@ -197,89 +197,313 @@
   --color-info-rgb: 98, 108, 113;
 }
 
-/* ENHANCED THEME SYSTEM - NOW AFFECTS ALL COLORS */
+/* ENHANCED THEME SYSTEM - VARIED TONES LIKE YOUR EXAMPLE */
 .theme-default {
-  --color-background: rgba(31, 33, 33, 1);
-  --color-surface: rgba(38, 40, 40, 1);
-  --color-text: rgba(245, 245, 245, 1);
-  --color-text-secondary: rgba(167, 169, 169, 0.9);
-  --color-primary: #2180D8;
-  --color-primary-hover: #1e73c2;
-  --color-primary-active: #1a66ad;
-  --color-secondary: rgba(33, 128, 216, 0.15);
-  --color-secondary-hover: rgba(33, 128, 216, 0.25);
-  --color-secondary-active: rgba(33, 128, 216, 0.3);
-  --color-border: rgba(33, 128, 216, 0.3);
-  --color-card-border: rgba(33, 128, 216, 0.2);
-  --color-card-border-inner: rgba(33, 128, 216, 0.15);
-  --color-btn-primary-text: rgba(255, 255, 255, 1);
-  --color-focus-ring: rgba(33, 128, 216, 0.4);
-  --theme-accent: #10b981;
-  --theme-warning: #f59e0b;
-  --theme-danger: #ef4444;
-}
-
-.theme-light {
-  --color-background: rgba(248, 250, 252, 1);
-  --color-surface: rgba(255, 255, 255, 1);
-  --color-text: rgba(15, 23, 42, 1);
-  --color-text-secondary: rgba(71, 85, 105, 1);
+  /* Deep blue backgrounds */
+  --color-background: #1a1d29;
+  --color-surface: #252945;
+  --color-surface-elevated: #2d3348;
+  /* Text colors */
+  --color-text: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  /* Primary blues with variations */
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
   --color-primary-active: #1d4ed8;
+  --color-primary-light: #60a5fa;
+  /* Secondary with blue tint */
   --color-secondary: rgba(59, 130, 246, 0.1);
   --color-secondary-hover: rgba(59, 130, 246, 0.2);
-  --color-secondary-active: rgba(59, 130, 246, 0.25);
+  --color-secondary-active: rgba(59, 130, 246, 0.3);
+  /* Borders with blue tints */
   --color-border: rgba(59, 130, 246, 0.2);
   --color-card-border: rgba(59, 130, 246, 0.15);
   --color-card-border-inner: rgba(59, 130, 246, 0.1);
-  --color-btn-primary-text: rgba(255, 255, 255, 1);
+  --color-btn-primary-text: #ffffff;
   --color-focus-ring: rgba(59, 130, 246, 0.4);
   --theme-accent: #06b6d4;
   --theme-warning: #f59e0b;
   --theme-danger: #ef4444;
 }
 
+.theme-light {
+  /* Light backgrounds */
+  --color-background: #fafbfc;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f8fafc;
+  /* Dark text */
+  --color-text: #1e293b;
+  --color-text-secondary: #475569;
+  /* Blue primaries */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
+  --color-primary-light: #3b82f6;
+  /* Light secondary */
+  --color-secondary: rgba(37, 99, 235, 0.08);
+  --color-secondary-hover: rgba(37, 99, 235, 0.12);
+  --color-secondary-active: rgba(37, 99, 235, 0.16);
+  /* Subtle borders */
+  --color-border: rgba(37, 99, 235, 0.15);
+  --color-card-border: rgba(37, 99, 235, 0.1);
+  --color-card-border-inner: rgba(37, 99, 235, 0.05);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(37, 99, 235, 0.3);
+  --theme-accent: #0891b2;
+  --theme-warning: #d97706;
+  --theme-danger: #dc2626;
+}
+
 .theme-dark {
-  --color-background: rgba(17, 24, 39, 1);
-  --color-surface: rgba(31, 41, 55, 1);
-  --color-text: rgba(249, 250, 251, 1);
-  --color-text-secondary: rgba(156, 163, 175, 0.9);
-  --color-primary: #6b7280;
-  --color-primary-hover: #4b5563;
-  --color-primary-active: #374151;
-  --color-secondary: rgba(107, 114, 128, 0.15);
-  --color-secondary-hover: rgba(107, 114, 128, 0.25);
-  --color-secondary-active: rgba(107, 114, 128, 0.3);
-  --color-border: rgba(107, 114, 128, 0.3);
-  --color-card-border: rgba(107, 114, 128, 0.2);
-  --color-card-border-inner: rgba(107, 114, 128, 0.15);
-  --color-btn-primary-text: rgba(255, 255, 255, 1);
-  --color-focus-ring: rgba(107, 114, 128, 0.4);
-  --theme-accent: #9ca3af;
+  /* Pure dark backgrounds */
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-elevated: #334155;
+  /* Light text */
+  --color-text: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  /* Gray primaries */
+  --color-primary: #64748b;
+  --color-primary-hover: #475569;
+  --color-primary-active: #334155;
+  --color-primary-light: #94a3b8;
+  /* Gray secondary */
+  --color-secondary: rgba(100, 116, 139, 0.1);
+  --color-secondary-hover: rgba(100, 116, 139, 0.2);
+  --color-secondary-active: rgba(100, 116, 139, 0.3);
+  /* Gray borders */
+  --color-border: rgba(100, 116, 139, 0.2);
+  --color-card-border: rgba(100, 116, 139, 0.15);
+  --color-card-border-inner: rgba(100, 116, 139, 0.1);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(100, 116, 139, 0.4);
+  --theme-accent: #94a3b8;
   --theme-warning: #f59e0b;
   --theme-danger: #ef4444;
 }
 
 .theme-blue {
-  --color-background: rgba(8, 47, 73, 1);
-  --color-surface: rgba(12, 74, 110, 1);
-  --color-text: rgba(186, 230, 253, 1);
-  --color-text-secondary: rgba(125, 211, 252, 0.9);
+  /* Deep ocean backgrounds */
+  --color-background: #0c1e2e;
+  --color-surface: #1e3a52;
+  --color-surface-elevated: #2a4a66;
+  /* Light blue text */
+  --color-text: #bae6fd;
+  --color-text-secondary: #7dd3fc;
+  /* Ocean blue primaries */
   --color-primary: #0ea5e9;
   --color-primary-hover: #0284c7;
   --color-primary-active: #0369a1;
-  --color-secondary: rgba(14, 165, 233, 0.15);
-  --color-secondary-hover: rgba(14, 165, 233, 0.25);
-  --color-secondary-active: rgba(14, 165, 233, 0.3);
-  --color-border: rgba(14, 165, 233, 0.3);
-  --color-card-border: rgba(14, 165, 233, 0.2);
-  --color-card-border-inner: rgba(14, 165, 233, 0.15);
-  --color-btn-primary-text: rgba(255, 255, 255, 1);
+  --color-primary-light: #38bdf8;
+  /* Blue secondary */
+  --color-secondary: rgba(14, 165, 233, 0.12);
+  --color-secondary-hover: rgba(14, 165, 233, 0.22);
+  --color-secondary-active: rgba(14, 165, 233, 0.32);
+  /* Ocean borders */
+  --color-border: rgba(14, 165, 233, 0.25);
+  --color-card-border: rgba(14, 165, 233, 0.18);
+  --color-card-border-inner: rgba(14, 165, 233, 0.12);
+  --color-btn-primary-text: #ffffff;
   --color-focus-ring: rgba(14, 165, 233, 0.4);
   --theme-accent: #06b6d4;
   --theme-warning: #f59e0b;
   --theme-danger: #ef4444;
+}
+
+.theme-green {
+  /* Forest backgrounds */
+  --color-background: #0a2e1a;
+  --color-surface: #1a4d2e;
+  --color-surface-elevated: #236b3b;
+  /* Light green text */
+  --color-text: #a7f3d0;
+  --color-text-secondary: #86efac;
+  /* Forest green primaries */
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-active: #065f46;
+  --color-primary-light: #10b981;
+  /* Green secondary */
+  --color-secondary: rgba(5, 150, 105, 0.12);
+  --color-secondary-hover: rgba(5, 150, 105, 0.22);
+  --color-secondary-active: rgba(5, 150, 105, 0.32);
+  /* Forest borders */
+  --color-border: rgba(5, 150, 105, 0.25);
+  --color-card-border: rgba(5, 150, 105, 0.18);
+  --color-card-border-inner: rgba(5, 150, 105, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(5, 150, 105, 0.4);
+  --theme-accent: #10b981;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-purple {
+  /* Deep purple backgrounds like your example */
+  --color-background: #1e1134;
+  --color-surface: #2d1b40;
+  --color-surface-elevated: #3b2652;
+  /* Light purple text */
+  --color-text: #e9d5ff;
+  --color-text-secondary: #c4b5fd;
+  /* Purple primaries */
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+  --color-primary-active: #6d28d9;
+  --color-primary-light: #a855f7;
+  /* Purple secondary */
+  --color-secondary: rgba(139, 92, 246, 0.12);
+  --color-secondary-hover: rgba(139, 92, 246, 0.22);
+  --color-secondary-active: rgba(139, 92, 246, 0.32);
+  /* Purple borders */
+  --color-border: rgba(139, 92, 246, 0.25);
+  --color-card-border: rgba(139, 92, 246, 0.18);
+  --color-card-border-inner: rgba(139, 92, 246, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(139, 92, 246, 0.4);
+  --theme-accent: #a855f7;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-violet {
+  /* Deep violet backgrounds */
+  --color-background: #1e1065;
+  --color-surface: #312e81;
+  --color-surface-elevated: #4338ca;
+  /* Light violet text */
+  --color-text: #ddd6fe;
+  --color-text-secondary: #c4b5fd;
+  /* Violet primaries */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-active: #4338ca;
+  --color-primary-light: #818cf8;
+  /* Violet secondary */
+  --color-secondary: rgba(99, 102, 241, 0.12);
+  --color-secondary-hover: rgba(99, 102, 241, 0.22);
+  --color-secondary-active: rgba(99, 102, 241, 0.32);
+  /* Violet borders */
+  --color-border: rgba(99, 102, 241, 0.25);
+  --color-card-border: rgba(99, 102, 241, 0.18);
+  --color-card-border-inner: rgba(99, 102, 241, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(99, 102, 241, 0.4);
+  --theme-accent: #8b5cf6;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-orange {
+  /* Sunset backgrounds */
+  --color-background: #431407;
+  --color-surface: #7c2d12;
+  --color-surface-elevated: #9a3412;
+  /* Light orange text */
+  --color-text: #fed7aa;
+  --color-text-secondary: #fdba74;
+  /* Orange primaries */
+  --color-primary: #ea580c;
+  --color-primary-hover: #dc2626;
+  --color-primary-active: #c2410c;
+  --color-primary-light: #f97316;
+  /* Orange secondary */
+  --color-secondary: rgba(234, 88, 12, 0.12);
+  --color-secondary-hover: rgba(234, 88, 12, 0.22);
+  --color-secondary-active: rgba(234, 88, 12, 0.32);
+  /* Orange borders */
+  --color-border: rgba(234, 88, 12, 0.25);
+  --color-card-border: rgba(234, 88, 12, 0.18);
+  --color-card-border-inner: rgba(234, 88, 12, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(234, 88, 12, 0.4);
+  --theme-accent: #f97316;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-pink {
+  /* Rose backgrounds */
+  --color-background: #4c0f24;
+  --color-surface: #7e1d3a;
+  --color-surface-elevated: #9d174d;
+  /* Light pink text */
+  --color-text: #fce7f3;
+  --color-text-secondary: #f4cfe0;
+  /* Pink primaries */
+  --color-primary: #ec4899;
+  --color-primary-hover: #db2777;
+  --color-primary-active: #be185d;
+  --color-primary-light: #f472b6;
+  /* Pink secondary */
+  --color-secondary: rgba(236, 72, 153, 0.12);
+  --color-secondary-hover: rgba(236, 72, 153, 0.22);
+  --color-secondary-active: rgba(236, 72, 153, 0.32);
+  /* Pink borders */
+  --color-border: rgba(236, 72, 153, 0.25);
+  --color-card-border: rgba(236, 72, 153, 0.18);
+  --color-card-border-inner: rgba(236, 72, 153, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(236, 72, 153, 0.4);
+  --theme-accent: #f472b6;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-teal {
+  /* Aqua backgrounds */
+  --color-background: #134e4a;
+  --color-surface: #0f766e;
+  --color-surface-elevated: #115e59;
+  /* Light teal text */
+  --color-text: #ccfbf1;
+  --color-text-secondary: #99f6e4;
+  /* Teal primaries */
+  --color-primary: #14b8a6;
+  --color-primary-hover: #0d9488;
+  --color-primary-active: #0f766e;
+  --color-primary-light: #2dd4bf;
+  /* Teal secondary */
+  --color-secondary: rgba(20, 184, 166, 0.12);
+  --color-secondary-hover: rgba(20, 184, 166, 0.22);
+  --color-secondary-active: rgba(20, 184, 166, 0.32);
+  /* Teal borders */
+  --color-border: rgba(20, 184, 166, 0.25);
+  --color-card-border: rgba(20, 184, 166, 0.18);
+  --color-card-border-inner: rgba(20, 184, 166, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(20, 184, 166, 0.4);
+  --theme-accent: #2dd4bf;
+  --theme-warning: #f59e0b;
+  --theme-danger: #ef4444;
+}
+
+.theme-red {
+  /* Cherry backgrounds */
+  --color-background: #450a0a;
+  --color-surface: #7f1d1d;
+  --color-surface-elevated: #991b1b;
+  /* Light red text */
+  --color-text: #fee2e2;
+  --color-text-secondary: #fca5a5;
+  /* Red primaries */
+  --color-primary: #dc2626;
+  --color-primary-hover: #b91c1c;
+  --color-primary-active: #991b1b;
+  --color-primary-light: #ef4444;
+  /* Red secondary */
+  --color-secondary: rgba(220, 38, 38, 0.12);
+  --color-secondary-hover: rgba(220, 38, 38, 0.22);
+  --color-secondary-active: rgba(220, 38, 38, 0.32);
+  /* Red borders */
+  --color-border: rgba(220, 38, 38, 0.25);
+  --color-card-border: rgba(220, 38, 38, 0.18);
+  --color-card-border-inner: rgba(220, 38, 38, 0.12);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(220, 38, 38, 0.4);
+  --theme-accent: #ef4444;
+  --theme-warning: #f59e0b;
+  --theme-danger: #fca5a5;
 }
 
 .theme-green {
@@ -938,7 +1162,7 @@ select.form-control {
 }
 
 .logo-image {
-  height: 3rem; /* Increased size for your 794x794px logo */
+  height: 6rem; /* Increased to 6rem (96px) for better prominence */
   width: auto;
   object-fit: contain;
   display: block;
@@ -968,17 +1192,27 @@ select.form-control {
 .theme-selector-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 120px;
+  align-items: flex-end;
+  justify-self: end;
 }
 
 .theme-selector {
-  min-width: 120px; /* Increased to accommodate longer theme names */
-  font-size: var(--font-size-sm);
+  min-width: 80px; /* Smaller and more subtle */
+  font-size: var(--font-size-xs);
+  padding: var(--space-6) var(--space-8);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  opacity: 0.7;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.theme-selector:hover {
+  opacity: 1;
 }
 
 .header-spacer {
-  min-width: 120px; /* Balance the theme selector */
+  min-width: 80px; /* Balance the smaller theme selector */
 }
 
 /* STRONGER CENTERING RULES */
@@ -999,7 +1233,7 @@ select.form-control {
 .header-content {
   display: flex !important;
   align-items: center !important;
-  gap: var(--space-16) !important;
+  gap: var(--space-20) !important; /* Increased gap for larger logo */
 }
 
 /* MOBILE HEADER OPTIMIZATION */
@@ -1024,6 +1258,7 @@ select.form-control {
     order: 2 !important;
     align-self: center !important;
     align-items: center !important;
+    justify-self: center !important;
   }
   
   .header-spacer {
@@ -1039,11 +1274,15 @@ select.form-control {
   }
   
   .logo-image {
-    height: 2.5rem !important; /* Slightly smaller on mobile */
+    height: 4rem !important; /* Scaled down for mobile */
   }
   
   .header-content {
-    gap: var(--space-12) !important;
+    gap: var(--space-16) !important;
+  }
+  
+  .theme-selector {
+    min-width: 70px !important;
   }
 }
 
@@ -1801,4 +2040,22 @@ select.form-control {
   .app-title {
     font-size: var(--font-size-xl);
   }
+}
+
+/* ENHANCED GRADIENT EFFECTS FOR CARDS */
+.card {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated, var(--color-surface)) 100%);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light, var(--color-primary)) 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
