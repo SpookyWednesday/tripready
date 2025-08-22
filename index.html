@@ -28,21 +28,30 @@
                         </div>
                     </div>
                     
-                    <!-- Theme Selector - Right positioned and subtle -->
-                    <div class="theme-selector-container">
-                        <select id="theme-selector" class="form-control theme-selector">
-                            <option value="theme-default">Default</option>
-                            <option value="theme-light">Light</option>
-                            <option value="theme-dark">Dark</option>
-                            <option value="theme-blue">Blue</option>
-                            <option value="theme-green">Green</option>
-                            <option value="theme-purple">Purple</option>
-                            <option value="theme-violet">Violet</option>
-                            <option value="theme-orange">Orange</option>
-                            <option value="theme-pink">Pink</option>
-                            <option value="theme-teal">Teal</option>
-                            <option value="theme-red">Red</option>
-                        </select>
+                    <!-- Theme Controls - Right positioned and subtle -->
+                    <div class="theme-controls-container">
+                        <div class="theme-selectors">
+                            <select id="theme-selector" class="form-control theme-selector">
+                                <option value="" disabled selected>Default Themes</option>
+                                <option value="theme-default">Default</option>
+                                <option value="theme-light">Light</option>
+                                <option value="theme-dark">Dark</option>
+                                <option value="theme-blue">Blue</option>
+                                <option value="theme-green">Green</option>
+                                <option value="theme-purple">Purple</option>
+                                <option value="theme-violet">Violet</option>
+                                <option value="theme-orange">Orange</option>
+                                <option value="theme-pink">Pink</option>
+                                <option value="theme-teal">Teal</option>
+                                <option value="theme-red">Red</option>
+                            </select>
+                            <div class="custom-theme-controls">
+                                <select id="custom-theme-selector" class="form-control custom-theme-selector">
+                                    <option value="" disabled selected>My Themes</option>
+                                </select>
+                                <button id="create-custom-theme" class="btn btn--sm btn--outline custom-create-btn" title="Create New Custom Theme">+</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -57,61 +66,47 @@
                         <div class="card__body">
                             <h2>Plan Your Trip</h2>
                             <form id="travel-form" class="travel-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="destination" class="form-label">Destination Country *</label>
-                                        <select id="destination" name="destination" class="form-control" required>
-                                            <option value="">Select destination country</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="nationality" class="form-label">Your Nationality *</label>
-                                        <select id="nationality" name="nationality" class="form-control" required>
-                                            <option value="">Select your nationality</option>
-                                        </select>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="destination" class="form-label">Destination Country *</label>
+                                    <select id="destination" name="destination" class="form-control" required>
+                                        <option value="">Select destination country</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="nationality" class="form-label">Your Nationality *</label>
+                                    <select id="nationality" name="nationality" class="form-control" required>
+                                        <option value="">Select your nationality</option>
+                                    </select>
                                 </div>
                                 
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="departure-date" class="form-label">Departure Date *</label>
-                                        <input type="date" 
-                                               id="departure-date" 
-                                               name="departure-date" 
-                                               class="form-control" 
-                                               required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="return-date" class="form-label">Return Date *</label>
-                                        <input type="date" 
-                                               id="return-date" 
-                                               name="return-date" 
-                                               class="form-control" 
-                                               required>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="departure-date" class="form-label">Departure Date *</label>
+                                    <input type="date" 
+                                           id="departure-date" 
+                                           name="departure-date" 
+                                           class="form-control" 
+                                           required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="return-date" class="form-label">Return Date *</label>
+                                    <input type="date" 
+                                           id="return-date" 
+                                           name="return-date" 
+                                           class="form-control" 
+                                           required>
                                 </div>
                                 
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="trip-type" class="form-label">Trip Type *</label>
-                                        <select id="trip-type" name="trip-type" class="form-control" required>
-                                            <option value="">Select trip type</option>
-                                            <option value="Business">Business</option>
-                                            <option value="Leisure">Leisure</option>
-                                            <option value="Adventure">Adventure</option>
-                                            <option value="Family">Family</option>
-                                            <option value="Romantic">Romantic</option>
-                                            <option value="Solo">Solo Travel</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="activities" class="form-label">Activities (Optional)</label>
-                                        <input type="text" 
-                                               id="activities" 
-                                               name="activities" 
-                                               class="form-control" 
-                                               placeholder="e.g., Hiking, Museums, Nightlife">
-                                    </div>
+                                <div class="form-group">
+                                    <label for="trip-type" class="form-label">Trip Type *</label>
+                                    <select id="trip-type" name="trip-type" class="form-control" required>
+                                        <option value="">Select trip type</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Leisure">Leisure</option>
+                                        <option value="Adventure">Adventure</option>
+                                        <option value="Family">Family</option>
+                                        <option value="Romantic">Romantic</option>
+                                        <option value="Solo">Solo Travel</option>
+                                    </select>
                                 </div>
                                 
                                 <button type="submit" class="btn btn--primary btn--lg btn--full-width generate-btn">
@@ -232,13 +227,150 @@
         <!-- Footer -->
         <footer class="app-footer">
             <div class="container">
-                <p>&copy; 2024 Tripready. Built with ❤️ for travelers worldwide.</p>
+                <p>&copy; 2025 Tripready. Built for travelers worldwide.</p>
             </div>
         </footer>
     </div>
 
     <!-- Toast Container -->
     <div class="toast-container"></div>
+
+    <!-- Custom Theme Modal -->
+    <div id="custom-theme-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="app.closeCustomThemeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="custom-theme-title">🎨 Create Custom Theme</h3>
+                <button class="modal-close" onclick="app.closeCustomThemeModal()">×</button>
+            </div>
+            <div class="theme-management" id="theme-management">
+                <div class="saved-themes">
+                    <label>Saved Themes</label>
+                    <div class="saved-themes-grid" id="saved-themes-grid">
+                        <!-- Saved themes will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="theme-preview">
+                    <div class="preview-card">
+                        <div class="preview-header">Preview</div>
+                        <div class="preview-button">Button</div>
+                    </div>
+                </div>
+                
+                <div class="preset-colors">
+                    <label>Quick Colors</label>
+                    <div class="preset-grid">
+                        <button class="preset-color" style="background: #86efac" data-color="#86efac"></button>
+                        <button class="preset-color" style="background: #c4b5fd" data-color="#c4b5fd"></button>
+                        <button class="preset-color" style="background: #a5b4fc" data-color="#a5b4fc"></button>
+                        <button class="preset-color" style="background: #fdba74" data-color="#fdba74"></button>
+                        <button class="preset-color" style="background: #f9a8d4" data-color="#f9a8d4"></button>
+                        <button class="preset-color" style="background: #7dd3fc" data-color="#7dd3fc"></button>
+                        <button class="preset-color" style="background: #fca5a5" data-color="#fca5a5"></button>
+                        <button class="preset-color" style="background: #fbbf24" data-color="#fbbf24"></button>
+                    </div>
+                </div>
+                
+                <div class="color-controls">
+                    <div class="color-group">
+                        <label for="accent-color">Accent Color</label>
+                        <div class="color-input-group">
+                            <input type="color" id="accent-color" value="#86efac">
+                            <input type="text" id="accent-color-text" value="#86efac">
+                        </div>
+                    </div>
+                    
+                    <div class="color-group">
+                        <label>Background Style</label>
+                        <div class="background-grid">
+                            <button class="background-option active" data-background="blue">
+                                <div class="bg-preview bg-blue"></div>
+                                <span>Ocean Blue</span>
+                            </button>
+                            <button class="background-option" data-background="dark">
+                                <div class="bg-preview bg-dark"></div>
+                                <span>Dark</span>
+                            </button>
+                            <button class="background-option" data-background="light">
+                                <div class="bg-preview bg-light"></div>
+                                <span>Light</span>
+                            </button>
+                            <button class="background-option" data-background="custom">
+                                <div class="bg-preview bg-custom" id="bg-custom-preview"></div>
+                                <span>Custom</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="color-group" id="custom-background-group">
+                        <label for="background-color">Custom Background Color</label>
+                        <div class="background-color-section">
+                            <div class="background-preset-colors">
+                                <button class="preset-bg-color" style="background: #86efac" data-bg-color="#86efac" title="Green"></button>
+                                <button class="preset-bg-color" style="background: #c4b5fd" data-bg-color="#c4b5fd" title="Purple"></button>
+                                <button class="preset-bg-color" style="background: #a5b4fc" data-bg-color="#a5b4fc" title="Blue"></button>
+                                <button class="preset-bg-color" style="background: #fdba74" data-bg-color="#fdba74" title="Orange"></button>
+                                <button class="preset-bg-color" style="background: #f9a8d4" data-bg-color="#f9a8d4" title="Pink"></button>
+                                <button class="preset-bg-color" style="background: #7dd3fc" data-bg-color="#7dd3fc" title="Sky Blue"></button>
+                                <button class="preset-bg-color" style="background: #fca5a5" data-bg-color="#fca5a5" title="Red"></button>
+                                <button class="preset-bg-color" style="background: #fbbf24" data-bg-color="#fbbf24" title="Yellow"></button>
+                            </div>
+                            <div class="color-input-group">
+                                <input type="color" id="background-color" value="#0c1e2e">
+                                <input type="text" id="background-color-text" value="#0c1e2e">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-group">
+                        <label for="font-selector">Font Style</label>
+                        <select id="font-selector" class="form-control">
+                            <option value="default">Inter - Modern Sans-Serif</option>
+                            <option value="system">System UI - Default System Font</option>
+                            <option value="helvetica">Helvetica - Classic Sans-Serif</option>
+                            <option value="arial">Arial - Web Safe Sans-Serif</option>
+                            <option value="roboto">Roboto - Google Material</option>
+                            <option value="open-sans">Open Sans - Friendly Readable</option>
+                            <option value="lato">Lato - Humanist Sans-Serif</option>
+                            <option value="poppins">Poppins - Geometric Modern</option>
+                            <option value="nunito">Nunito - Rounded Friendly</option>
+                            <option value="montserrat">Montserrat - Urban Modern</option>
+                            <option value="source-sans">Source Sans Pro - Clean Tech</option>
+                            <option value="ubuntu">Ubuntu - Linux Style</option>
+                            <option value="georgia">Georgia - Classic Serif</option>
+                            <option value="times">Times New Roman - Traditional Serif</option>
+                            <option value="crimson">Crimson Text - Editorial Serif</option>
+                            <option value="playfair">Playfair Display - Elegant Serif</option>
+                            <option value="merriweather">Merriweather - Readable Serif</option>
+                            <option value="mono">Fira Code - Modern Monospace</option>
+                            <option value="courier">Courier - Classic Monospace</option>
+                            <option value="inconsolata">Inconsolata - Coding Font</option>
+                        </select>
+                        
+                        <div class="font-preview-area">
+                            <div class="font-preview-text" id="font-preview-text">
+                                <div class="preview-line preview-large">The quick brown fox</div>
+                                <div class="preview-line preview-medium">jumps over the lazy dog</div>
+                                <div class="preview-line preview-small">ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="theme-name-group">
+                    <input type="text" id="theme-name-input" class="form-control" placeholder="Enter theme name..." maxlength="30">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn--outline" onclick="app.closeCustomThemeModal()">Cancel</button>
+                    <button id="delete-theme-btn" class="btn btn--danger hidden" onclick="app.deleteCurrentTheme()">Delete</button>
+                    <button class="btn btn--primary" onclick="app.saveCustomTheme()">Save Theme</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

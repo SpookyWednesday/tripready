@@ -26,18 +26,17 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { destination, weather, tripType, duration, activities } = JSON.parse(event.body || '{}');
+    const { destination, weather, tripType, duration } = JSON.parse(event.body || '{}');
     const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 
     if (!HUGGINGFACE_API_KEY) {
       console.log('No HuggingFace API key found, using fallback recommendations');
-      return getFallbackRecommendations(destination, weather, tripType, duration, activities, headers);
+      return getFallbackRecommendations(destination, weather, tripType, duration, headers);
     }
 
     // Create a prompt for the AI model
     const prompt = `Create a packing list for a ${duration}-day ${tripType} trip to ${destination}. 
     Weather: ${weather?.current?.description || 'unknown'}, ${weather?.current?.temperature || 'unknown'}°C.
-    Activities: ${activities || 'general tourism'}.
 
     Please suggest specific items organized by category (documents, clothing, electronics, toiletries, accessories).
     Focus on practical, essential items for this specific trip.`;
@@ -91,7 +90,6 @@ exports.handler = async (event, context) => {
       JSON.parse(event.body || '{}').weather,
       JSON.parse(event.body || '{}').tripType,
       JSON.parse(event.body || '{}').duration,
-      JSON.parse(event.body || '{}').activities,
       headers
     );
 
@@ -99,7 +97,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-function getFallbackRecommendations(destination, weather, tripType, duration, activities, headers) {
+function getFallbackRecommendations(destination, weather, tripType, duration, headers) {
   const baseCategories = {
     documents: {
       name: "📄 Essential Documents",

@@ -92,7 +92,7 @@ async function getVisaData(nationality, destination) {
     }
 }
 
-async function getRecommendations(destination, weather, tripType, duration, activities) {
+async function getRecommendations(destination, weather, tripType, duration) {
     try {
         console.log('🤖 Frontend calling recommendations API:', destination, tripType);
         const response = await fetch(`${API_BASE}/recommendations`, {
@@ -104,8 +104,7 @@ async function getRecommendations(destination, weather, tripType, duration, acti
                 destination,
                 weather,
                 tripType,
-                duration,
-                activities
+                duration
             })
         });
         
@@ -128,6 +127,8 @@ class TravelPackingApp {
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
         this.isGenerating = false;
+        this.currentEditingTheme = null;
+        this.savedCustomThemes = this.loadSavedCustomThemes();
 
         this.packingCategories = {
             documents: {
@@ -203,6 +204,7 @@ class TravelPackingApp {
         this.loadSavedTheme();
         this.setupEventListeners();
         this.populateDropdowns();
+        this.populateCustomThemeSelector();
         this.setMinDates();
         this.loadSavedProgress();
         console.log('✅ App initialized successfully');
@@ -211,26 +213,95 @@ class TravelPackingApp {
     loadSavedTheme() {
         try {
             const savedTheme = localStorage.getItem('travel-app-theme') || 'theme-default';
+            const activeCustomTheme = localStorage.getItem('active-custom-theme');
             const themeSelector = document.getElementById('theme-selector');
+            const customThemeSelector = document.getElementById('custom-theme-selector');
             const body = document.body;
 
-            if (themeSelector && body) {
-                themeSelector.value = savedTheme;
-                body.className = savedTheme;
-                body.setAttribute('data-color-scheme', savedTheme.includes('dark') ? 'dark' : 'light');
+            if (body) {
+                if (savedTheme === 'theme-custom' && activeCustomTheme) {
+                    // Load custom theme
+                    if (customThemeSelector) customThemeSelector.value = activeCustomTheme;
+                    if (themeSelector) themeSelector.selectedIndex = 0; // Reset to header
+                    this.applyCustomTheme(activeCustomTheme);
+                } else {
+                    // Load default theme
+                    if (themeSelector) themeSelector.value = savedTheme;
+                    if (customThemeSelector) customThemeSelector.selectedIndex = 0; // Reset to header
+                    body.className = savedTheme;
+                    body.setAttribute('data-color-scheme', savedTheme.includes('dark') ? 'dark' : 'light');
+                }
             }
         } catch (error) {
             console.error('Error loading saved theme:', error);
         }
     }
 
+    loadAndApplyCustomTheme() {
+        const savedCustomTheme = localStorage.getItem('custom-theme-settings');
+        if (savedCustomTheme) {
+            try {
+                const settings = JSON.parse(savedCustomTheme);
+                const themeColors = this.generateThemeColors(
+                    settings.accentColor || '#86efac', 
+                    settings.backgroundStyle || 'blue'
+                );
+                
+                const root = document.documentElement;
+                Object.entries(themeColors).forEach(([property, value]) => {
+                    root.style.setProperty(property, value);
+                });
+
+                // Update body classes and attributes for custom theme
+                const body = document.body;
+                if (body) {
+                    // Add font class if not default
+                    const fontStyle = settings.fontStyle || 'default';
+                    if (fontStyle !== 'default') {
+                        body.classList.add(`font-${fontStyle}`);
+                    }
+                    
+                    body.setAttribute('data-color-scheme', settings.backgroundStyle === 'light' ? 'light' : 'dark');
+                }
+            } catch (error) {
+                console.error('Error loading custom theme settings:', error);
+            }
+        }
+    }
+
     setupEventListeners() {
         try {
-            // Theme selector
+            // Default theme selector
             const themeSelector = document.getElementById('theme-selector');
             if (themeSelector) {
                 themeSelector.addEventListener('change', (e) => {
-                    this.changeTheme(e.target.value);
+                    if (e.target.value && e.target.value !== '') {
+                        this.changeTheme(e.target.value);
+                    } else {
+                        // Reset to header if invalid selection
+                        e.target.selectedIndex = 0;
+                    }
+                });
+            }
+
+            // Custom theme selector
+            const customThemeSelector = document.getElementById('custom-theme-selector');
+            if (customThemeSelector) {
+                customThemeSelector.addEventListener('change', (e) => {
+                    if (e.target.value && e.target.value !== '') {
+                        this.applyCustomTheme(e.target.value);
+                    } else {
+                        // Reset to header if invalid selection
+                        e.target.selectedIndex = 0;
+                    }
+                });
+            }
+
+            // Create custom theme button
+            const createCustomBtn = document.getElementById('create-custom-theme');
+            if (createCustomBtn) {
+                createCustomBtn.addEventListener('click', () => {
+                    this.openCustomThemeModal();
                 });
             }
 
@@ -268,15 +339,662 @@ class TravelPackingApp {
 
     changeTheme(themeName) {
         try {
+            // Clear custom theme selector when using default themes
+            const customThemeSelector = document.getElementById('custom-theme-selector');
+            if (customThemeSelector) {
+                customThemeSelector.selectedIndex = 0; // Reset to header
+            }
+
             const body = document.body;
             if (body) {
+                // Clear custom theme classes
+                this.clearFontClasses(body);
                 body.className = themeName;
                 body.setAttribute('data-color-scheme', themeName.includes('dark') ? 'dark' : 'light');
                 localStorage.setItem('travel-app-theme', themeName);
+                localStorage.removeItem('active-custom-theme');
+                
+                // Clear custom CSS variables
+                const root = document.documentElement;
+                const customVars = ['--custom-background', '--custom-surface', '--custom-text', '--custom-primary'];
+                customVars.forEach(varName => root.style.removeProperty(varName));
+                
                 this.showToast('Theme changed successfully!', 'success');
             }
         } catch (error) {
             console.error('Error changing theme:', error);
+        }
+    }
+
+    openCustomThemeModal() {
+        const modal = document.getElementById('custom-theme-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            this.currentEditingTheme = null;
+            
+            // Reset modal UI
+            document.getElementById('custom-theme-title').textContent = '🎨 Create Custom Theme';
+            document.getElementById('delete-theme-btn').classList.add('hidden');
+            document.getElementById('theme-name-input').value = '';
+            
+            this.populateSavedThemesGrid();
+            this.loadCustomThemeSettings();
+            this.setupCustomThemeEventListeners();
+        }
+    }
+
+    closeCustomThemeModal() {
+        const modal = document.getElementById('custom-theme-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        // Reset theme selector if user cancels
+        const themeSelector = document.getElementById('theme-selector');
+        const currentTheme = localStorage.getItem('travel-app-theme') || 'theme-default';
+        if (themeSelector) {
+            themeSelector.value = currentTheme;
+        }
+    }
+
+    loadCustomThemeSettings() {
+        const savedCustomTheme = localStorage.getItem('custom-theme-settings');
+        let accentColor = '#86efac';
+        let backgroundStyle = 'blue';
+        let fontStyle = 'default';
+        
+        if (savedCustomTheme) {
+            try {
+                const settings = JSON.parse(savedCustomTheme);
+                accentColor = settings.accentColor || '#86efac';
+                backgroundStyle = settings.backgroundStyle || 'blue';
+                fontStyle = settings.fontStyle || 'default';
+            } catch (error) {
+                console.error('Error parsing saved custom theme:', error);
+            }
+        }
+
+        const accentColorInput = document.getElementById('accent-color');
+        const accentColorText = document.getElementById('accent-color-text');
+        const fontSelector = document.getElementById('font-selector');
+
+        if (accentColorInput) accentColorInput.value = accentColor;
+        if (accentColorText) accentColorText.value = accentColor;
+        if (fontSelector) fontSelector.value = fontStyle;
+
+        // Update active preset color
+        const presetColors = document.querySelectorAll('.preset-color');
+        presetColors.forEach(preset => {
+            preset.classList.remove('active');
+            if (preset.getAttribute('data-color') === accentColor) {
+                preset.classList.add('active');
+            }
+        });
+
+        // Update active background style
+        const backgroundOptions = document.querySelectorAll('.background-option');
+        backgroundOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.getAttribute('data-background') === backgroundStyle) {
+                option.classList.add('active');
+            }
+        });
+
+        // Trigger initial preview update
+        setTimeout(() => this.updateThemePreview(), 100);
+    }
+
+    setupCustomThemeEventListeners() {
+        const accentColorInput = document.getElementById('accent-color');
+        const accentColorText = document.getElementById('accent-color-text');
+        const backgroundColorInput = document.getElementById('background-color');
+        const backgroundColorText = document.getElementById('background-color-text');
+        const presetColors = document.querySelectorAll('.preset-color');
+        const presetBgColors = document.querySelectorAll('.preset-bg-color');
+        const backgroundOptions = document.querySelectorAll('.background-option');
+        const fontSelector = document.getElementById('font-selector');
+
+        // Sync accent color inputs
+        if (accentColorInput && accentColorText) {
+            accentColorInput.addEventListener('input', (e) => {
+                accentColorText.value = e.target.value;
+                this.updateThemePreview();
+            });
+
+            accentColorText.addEventListener('input', (e) => {
+                if (this.isValidHexColor(e.target.value)) {
+                    accentColorInput.value = e.target.value;
+                    this.updateThemePreview();
+                }
+            });
+        }
+
+        // Sync background color inputs
+        if (backgroundColorInput && backgroundColorText) {
+            backgroundColorInput.addEventListener('input', (e) => {
+                backgroundColorText.value = e.target.value;
+                this.updateCustomBackgroundPreview();
+                this.updateThemePreview();
+            });
+
+            backgroundColorText.addEventListener('input', (e) => {
+                if (this.isValidHexColor(e.target.value)) {
+                    backgroundColorInput.value = e.target.value;
+                    this.updateCustomBackgroundPreview();
+                    this.updateThemePreview();
+                }
+            });
+        }
+
+        // Preset accent color selection
+        presetColors.forEach(preset => {
+            preset.addEventListener('click', (e) => {
+                const color = e.target.getAttribute('data-color');
+                if (accentColorInput) accentColorInput.value = color;
+                if (accentColorText) accentColorText.value = color;
+                
+                // Update active state
+                presetColors.forEach(p => p.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                this.updateThemePreview();
+            });
+        });
+
+        // Preset background color selection
+        presetBgColors.forEach(preset => {
+            preset.addEventListener('click', (e) => {
+                const color = e.target.getAttribute('data-bg-color');
+                if (backgroundColorInput) backgroundColorInput.value = color;
+                if (backgroundColorText) backgroundColorText.value = color;
+                
+                // Update active state
+                presetBgColors.forEach(p => p.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                this.updateCustomBackgroundPreview();
+                this.updateThemePreview();
+            });
+        });
+
+        // Background style selection
+        backgroundOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                // Update active state
+                backgroundOptions.forEach(opt => opt.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Show/hide custom background controls
+                const customBgGroup = document.getElementById('custom-background-group');
+                const isCustom = e.currentTarget.getAttribute('data-background') === 'custom';
+                
+                if (customBgGroup) {
+                    if (isCustom) {
+                        customBgGroup.classList.add('visible');
+                    } else {
+                        customBgGroup.classList.remove('visible');
+                    }
+                }
+                
+                this.updateThemePreview();
+            });
+        });
+
+        // Font style selection
+        if (fontSelector) {
+            fontSelector.addEventListener('change', () => {
+                this.updateThemePreview();
+                this.updateFontPreview();
+            });
+        }
+    }
+
+    updateThemePreview() {
+        const accentColor = document.getElementById('accent-color')?.value || '#86efac';
+        
+        // Get selected background style
+        const activeBackground = document.querySelector('.background-option.active');
+        const backgroundStyle = activeBackground?.getAttribute('data-background') || 'blue';
+        
+        // Get selected font style
+        const fontSelector = document.getElementById('font-selector');
+        const fontStyle = fontSelector?.value || 'default';
+        
+        // Get custom background color if selected
+        let customBackgroundColor = null;
+        if (backgroundStyle === 'custom') {
+            const backgroundColorInput = document.getElementById('background-color');
+            customBackgroundColor = backgroundColorInput?.value || '#0c1e2e';
+        }
+        
+        // Generate theme colors based on accent and background
+        const themeColors = this.generateThemeColors(accentColor, backgroundStyle, customBackgroundColor);
+        
+        // Update preview
+        const root = document.documentElement;
+        Object.entries(themeColors).forEach(([property, value]) => {
+            root.style.setProperty(property, value);
+        });
+
+        // Apply font style to preview
+        const body = document.body;
+        if (body) {
+            // Remove existing font classes
+            this.clearFontClasses(body);
+            
+            // Add new font class if not default
+            if (fontStyle !== 'default') {
+                body.classList.add(`font-${fontStyle}`);
+            }
+        }
+        
+        // Update font preview
+        this.updateFontPreview();
+    }
+
+    updateFontPreview() {
+        const fontSelector = document.getElementById('font-selector');
+        const fontPreviewText = document.getElementById('font-preview-text');
+        
+        if (fontSelector && fontPreviewText) {
+            const fontStyle = fontSelector.value || 'default';
+            
+            // Remove existing font classes
+            this.clearFontClasses(fontPreviewText);
+            
+            // Add new font class
+            if (fontStyle !== 'default') {
+                fontPreviewText.classList.add(`font-${fontStyle}`);
+            }
+        }
+    }
+
+    clearFontClasses(element) {
+        const fontClasses = [
+            'font-system', 'font-helvetica', 'font-arial', 'font-roboto', 'font-open-sans',
+            'font-lato', 'font-poppins', 'font-nunito', 'font-montserrat', 'font-source-sans',
+            'font-ubuntu', 'font-georgia', 'font-times', 'font-crimson', 'font-playfair',
+            'font-merriweather', 'font-mono', 'font-courier', 'font-inconsolata'
+        ];
+        fontClasses.forEach(cls => element.classList.remove(cls));
+    }
+
+    updateCustomBackgroundPreview() {
+        const backgroundColorInput = document.getElementById('background-color');
+        const bgCustomPreview = document.getElementById('bg-custom-preview');
+        
+        if (backgroundColorInput && bgCustomPreview) {
+            const color = backgroundColorInput.value;
+            const root = document.documentElement;
+            root.style.setProperty('--custom-bg-preview', color);
+        }
+    }
+
+    generateThemeColors(accentColor, backgroundStyle, customBackgroundColor = null) {
+        // Parse hex color to RGB
+        const hex = accentColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+
+        // Generate variations
+        const lighten = (percent) => {
+            return `rgb(${Math.min(255, r + (255 - r) * percent)}, ${Math.min(255, g + (255 - g) * percent)}, ${Math.min(255, b + (255 - b) * percent)})`;
+        };
+
+        const darken = (percent) => {
+            return `rgb(${Math.max(0, r * (1 - percent))}, ${Math.max(0, g * (1 - percent))}, ${Math.max(0, b * (1 - percent))})`;
+        };
+
+        // Background colors based on style
+        let backgrounds;
+        switch (backgroundStyle) {
+            case 'light':
+                backgrounds = {
+                    background: '#fafbfc',
+                    surface: '#ffffff',
+                    surfaceElevated: '#f8fafc',
+                    text: '#1e293b',
+                    textSecondary: '#475569',
+                    btnText: darken(0.8)
+                };
+                break;
+            case 'dark':
+                backgrounds = {
+                    background: '#0f172a',
+                    surface: '#1e293b',
+                    surfaceElevated: '#334155',
+                    text: '#f1f5f9',
+                    textSecondary: '#94a3b8',
+                    btnText: '#ffffff'
+                };
+                break;
+            case 'custom':
+                const customBg = customBackgroundColor || '#0c1e2e';
+                // Parse custom background color to determine if it's light or dark
+                const bgHex = customBg.replace('#', '');
+                const bgR = parseInt(bgHex.substr(0, 2), 16);
+                const bgG = parseInt(bgHex.substr(2, 2), 16);
+                const bgB = parseInt(bgHex.substr(4, 2), 16);
+                const brightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
+                const isLight = brightness > 128;
+                
+                // Generate surface colors based on background
+                const surfaceShift = isLight ? -20 : 20;
+                const elevatedShift = isLight ? -40 : 40;
+                
+                backgrounds = {
+                    background: customBg,
+                    surface: `rgb(${Math.max(0, Math.min(255, bgR + surfaceShift))}, ${Math.max(0, Math.min(255, bgG + surfaceShift))}, ${Math.max(0, Math.min(255, bgB + surfaceShift))})`,
+                    surfaceElevated: `rgb(${Math.max(0, Math.min(255, bgR + elevatedShift))}, ${Math.max(0, Math.min(255, bgG + elevatedShift))}, ${Math.max(0, Math.min(255, bgB + elevatedShift))})`,
+                    text: isLight ? '#1e293b' : '#e2e8f0',
+                    textSecondary: isLight ? '#475569' : '#94a3b8',
+                    btnText: isLight ? darken(0.8) : '#ffffff'
+                };
+                break;
+            default: // blue
+                backgrounds = {
+                    background: '#0c1e2e',
+                    surface: '#1e3a52',
+                    surfaceElevated: '#2a4a66',
+                    text: '#e2e8f0',
+                    textSecondary: '#94a3b8',
+                    btnText: darken(0.8)
+                };
+        }
+
+        return {
+            '--custom-background': backgrounds.background,
+            '--custom-surface': backgrounds.surface,
+            '--custom-surface-elevated': backgrounds.surfaceElevated,
+            '--custom-text': backgrounds.text,
+            '--custom-text-secondary': backgrounds.textSecondary,
+            '--custom-primary': accentColor,
+            '--custom-primary-hover': lighten(0.1),
+            '--custom-primary-active': darken(0.1),
+            '--custom-secondary': `rgba(${r}, ${g}, ${b}, 0.08)`,
+            '--custom-secondary-hover': `rgba(${r}, ${g}, ${b}, 0.12)`,
+            '--custom-secondary-active': `rgba(${r}, ${g}, ${b}, 0.16)`,
+            '--custom-border': `rgba(${r}, ${g}, ${b}, 0.2)`,
+            '--custom-card-border': `rgba(${r}, ${g}, ${b}, 0.15)`,
+            '--custom-card-border-inner': `rgba(${r}, ${g}, ${b}, 0.1)`,
+            '--custom-btn-text': backgrounds.btnText,
+            '--custom-focus-ring': `rgba(${r}, ${g}, ${b}, 0.3)`
+        };
+    }
+
+    saveCustomTheme() {
+        const accentColor = document.getElementById('accent-color')?.value || '#86efac';
+        const themeNameInput = document.getElementById('theme-name-input');
+        const themeName = themeNameInput?.value.trim();
+        
+        if (!themeName) {
+            this.showToast('Please enter a theme name', 'warning');
+            return;
+        }
+        
+        // Get selected options
+        const activeBackground = document.querySelector('.background-option.active');
+        const backgroundStyle = activeBackground?.getAttribute('data-background') || 'blue';
+        
+        const fontSelector = document.getElementById('font-selector');
+        const fontStyle = fontSelector?.value || 'default';
+
+        // Get custom background color if applicable
+        let customBackgroundColor = null;
+        if (backgroundStyle === 'custom') {
+            const backgroundColorInput = document.getElementById('background-color');
+            customBackgroundColor = backgroundColorInput?.value || '#0c1e2e';
+        }
+
+        // Create theme data
+        const themeData = {
+            accentColor,
+            backgroundStyle,
+            customBackgroundColor,
+            fontStyle,
+            createdAt: new Date().toISOString()
+        };
+
+        // Save to themes collection
+        this.savedCustomThemes[themeName] = themeData;
+        this.saveCustomThemesToStorage();
+        
+        // Update UI
+        this.populateCustomThemeSelector();
+        this.populateSavedThemesGrid();
+
+        // Apply the custom theme
+        this.applyCustomTheme(themeName);
+
+        this.closeCustomThemeModal();
+        this.showToast(`Theme "${themeName}" saved and applied!`, 'success');
+    }
+
+    isValidHexColor(hex) {
+        return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
+    }
+
+    // Custom Theme Management Methods
+    loadSavedCustomThemes() {
+        try {
+            const savedThemes = localStorage.getItem('saved-custom-themes');
+            return savedThemes ? JSON.parse(savedThemes) : {};
+        } catch (error) {
+            console.error('Error loading saved custom themes:', error);
+            return {};
+        }
+    }
+
+    saveCustomThemesToStorage() {
+        try {
+            localStorage.setItem('saved-custom-themes', JSON.stringify(this.savedCustomThemes));
+        } catch (error) {
+            console.error('Error saving custom themes:', error);
+        }
+    }
+
+    populateCustomThemeSelector() {
+        const customThemeSelector = document.getElementById('custom-theme-selector');
+        if (!customThemeSelector) return;
+
+        // Clear existing options except the first one (header)
+        while (customThemeSelector.children.length > 1) {
+            customThemeSelector.removeChild(customThemeSelector.lastChild);
+        }
+
+        const themeNames = Object.keys(this.savedCustomThemes);
+        
+        if (themeNames.length === 0) {
+            // Show "No themes saved" when empty
+            const noThemesOption = document.createElement('option');
+            noThemesOption.value = '';
+            noThemesOption.textContent = 'No themes saved';
+            noThemesOption.disabled = true;
+            customThemeSelector.appendChild(noThemesOption);
+        } else {
+            // Add saved themes
+            themeNames.forEach(themeName => {
+                const option = document.createElement('option');
+                option.value = themeName;
+                option.textContent = themeName;
+                customThemeSelector.appendChild(option);
+            });
+        }
+    }
+
+    populateSavedThemesGrid() {
+        const savedThemesGrid = document.getElementById('saved-themes-grid');
+        if (!savedThemesGrid) return;
+
+        savedThemesGrid.innerHTML = '';
+
+        Object.entries(this.savedCustomThemes).forEach(([themeName, themeData]) => {
+            const themeItem = document.createElement('div');
+            themeItem.className = 'saved-theme-item';
+            themeItem.setAttribute('data-theme-name', themeName);
+            
+            const preview = document.createElement('div');
+            preview.className = 'saved-theme-preview';
+            preview.style.background = themeData.accentColor;
+            
+            const name = document.createElement('div');
+            name.className = 'saved-theme-name';
+            name.textContent = themeName;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'saved-theme-delete';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.deleteSavedTheme(themeName);
+            };
+            
+            themeItem.appendChild(preview);
+            themeItem.appendChild(name);
+            themeItem.appendChild(deleteBtn);
+            
+            themeItem.onclick = () => this.loadThemeForEditing(themeName);
+            
+            savedThemesGrid.appendChild(themeItem);
+        });
+    }
+
+    loadThemeForEditing(themeName) {
+        this.currentEditingTheme = themeName;
+        const themeData = this.savedCustomThemes[themeName];
+        
+        if (themeData) {
+            // Update form inputs
+            const accentColorInput = document.getElementById('accent-color');
+            const accentColorText = document.getElementById('accent-color-text');
+            const themeNameInput = document.getElementById('theme-name-input');
+            
+            if (accentColorInput) accentColorInput.value = themeData.accentColor;
+            if (accentColorText) accentColorText.value = themeData.accentColor;
+            if (themeNameInput) themeNameInput.value = themeName;
+            
+            // Update active states
+            this.updateActiveOptions(themeData);
+            this.updateThemePreview();
+            
+            // Update UI
+            document.getElementById('custom-theme-title').textContent = `🎨 Edit Theme: ${themeName}`;
+            document.getElementById('delete-theme-btn').classList.remove('hidden');
+            
+            // Update active state in grid
+            const savedThemeItems = document.querySelectorAll('.saved-theme-item');
+            savedThemeItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-theme-name') === themeName) {
+                    item.classList.add('active');
+                }
+            });
+        }
+    }
+
+    updateActiveOptions(themeData) {
+        // Update accent color inputs
+        const accentColorInput = document.getElementById('accent-color');
+        const accentColorText = document.getElementById('accent-color-text');
+        if (accentColorInput) accentColorInput.value = themeData.accentColor;
+        if (accentColorText) accentColorText.value = themeData.accentColor;
+
+        // Update preset colors
+        const presetColors = document.querySelectorAll('.preset-color');
+        presetColors.forEach(preset => {
+            preset.classList.remove('active');
+            if (preset.getAttribute('data-color') === themeData.accentColor) {
+                preset.classList.add('active');
+            }
+        });
+
+        // Update background options
+        const backgroundOptions = document.querySelectorAll('.background-option');
+        backgroundOptions.forEach(option => {
+            option.classList.remove('active');
+            if (option.getAttribute('data-background') === themeData.backgroundStyle) {
+                option.classList.add('active');
+            }
+        });
+
+        // Update custom background color if applicable
+        if (themeData.backgroundStyle === 'custom' && themeData.customBackgroundColor) {
+            const backgroundColorInput = document.getElementById('background-color');
+            const backgroundColorText = document.getElementById('background-color-text');
+            if (backgroundColorInput) backgroundColorInput.value = themeData.customBackgroundColor;
+            if (backgroundColorText) backgroundColorText.value = themeData.customBackgroundColor;
+            
+            // Show custom background controls
+            const customBgGroup = document.getElementById('custom-background-group');
+            if (customBgGroup) {
+                customBgGroup.classList.add('visible');
+            }
+        }
+
+        // Update font selector
+        const fontSelector = document.getElementById('font-selector');
+        if (fontSelector) {
+            fontSelector.value = themeData.fontStyle || 'default';
+        }
+    }
+
+    applyCustomTheme(themeName) {
+        const themeData = this.savedCustomThemes[themeName];
+        if (!themeData) return;
+
+        // Clear default theme selector
+        const themeSelector = document.getElementById('theme-selector');
+        if (themeSelector) {
+            themeSelector.selectedIndex = 0; // Reset to header
+        }
+
+        const body = document.body;
+        if (body) {
+            // Apply custom theme
+            body.className = 'theme-custom';
+            
+            // Add font class if not default
+            this.clearFontClasses(body);
+            if (themeData.fontStyle !== 'default') {
+                body.classList.add(`font-${themeData.fontStyle}`);
+            }
+            
+            body.setAttribute('data-color-scheme', themeData.backgroundStyle === 'light' ? 'light' : 'dark');
+            localStorage.setItem('travel-app-theme', 'theme-custom');
+            localStorage.setItem('active-custom-theme', themeName);
+        }
+
+        // Generate and apply custom CSS variables
+        const themeColors = this.generateThemeColors(themeData.accentColor, themeData.backgroundStyle, themeData.customBackgroundColor);
+        const root = document.documentElement;
+        Object.entries(themeColors).forEach(([property, value]) => {
+            root.style.setProperty(property, value);
+        });
+
+        this.showToast(`Applied theme: ${themeName}`, 'success');
+    }
+
+    deleteSavedTheme(themeName) {
+        if (confirm(`Are you sure you want to delete the theme "${themeName}"?`)) {
+            delete this.savedCustomThemes[themeName];
+            this.saveCustomThemesToStorage();
+            this.populateCustomThemeSelector();
+            this.populateSavedThemesGrid();
+            
+            // If this was the active theme, switch to default
+            const activeCustomTheme = localStorage.getItem('active-custom-theme');
+            if (activeCustomTheme === themeName) {
+                this.changeTheme('theme-default');
+            }
+            
+            this.showToast(`Deleted theme: ${themeName}`, 'success');
+        }
+    }
+
+    deleteCurrentTheme() {
+        if (this.currentEditingTheme) {
+            this.deleteSavedTheme(this.currentEditingTheme);
+            this.closeCustomThemeModal();
         }
     }
 
@@ -379,7 +1097,6 @@ class TravelPackingApp {
                 departureDate: formData.get('departure-date'),
                 returnDate: formData.get('return-date'),
                 tripType: formData.get('trip-type'),
-                activities: formData.get('activities')?.trim() || ''
             };
 
             console.log('📝 Form data extracted:', tripData);
@@ -404,7 +1121,7 @@ class TravelPackingApp {
             const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
                 getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
                 getVisaData(tripData.nationality, tripData.destination),
-                getRecommendations(tripData.destination, null, tripData.tripType, duration, tripData.activities)
+                getRecommendations(tripData.destination, null, tripData.tripType, duration)
             ]);
 
             // Process results
