@@ -30,6 +30,8 @@ exports.handler = async (event, context) => {
     const API_KEY = process.env.OPENWEATHER_API_KEY;
 
     console.log('Weather request for:', destination);
+    console.log('Available env vars:', Object.keys(process.env).filter(key => key.includes('WEATHER') || key.includes('OPENWEATHER')));
+    console.log('API_KEY value:', API_KEY ? 'Present' : 'Missing');
 
     if (!API_KEY) {
       console.error('OpenWeatherMap API key not configured');
