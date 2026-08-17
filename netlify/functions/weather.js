@@ -1,5 +1,40 @@
 const axios = require('axios');
 
+// OpenWeatherMap's free forecast endpoint only covers ~5 days ahead in 3-hour
+// steps. Pick one representative entry per calendar day (closest to midday),
+// preferring days that fall inside the trip's departure/return window when
+// they're within that 5-day range.
+function selectForecastDays(list, departureDate, returnDate) {
+  const byDate = new Map();
+  for (const item of list) {
+    const itemDate = new Date(item.dt * 1000);
+    const dateKey = itemDate.toISOString().split('T')[0];
+    const hourDelta = Math.abs(itemDate.getUTCHours() - 12);
+    const existing = byDate.get(dateKey);
+    if (!existing || hourDelta < existing.hourDelta) {
+      byDate.set(dateKey, { item, hourDelta });
+    }
+  }
+
+  const dailyEntries = Array.from(byDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateKey, { item }]) => ({ dateKey, item }));
+
+  let selected = dailyEntries;
+  let usedTripDates = false;
+
+  if (departureDate) {
+    const rangeEnd = returnDate || departureDate;
+    const inRange = dailyEntries.filter(({ dateKey }) => dateKey >= departureDate && dateKey <= rangeEnd);
+    if (inRange.length > 0) {
+      selected = inRange;
+      usedTripDates = true;
+    }
+  }
+
+  return { entries: selected.slice(0, 5).map(({ item }) => item), usedTripDates };
+}
+
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -82,6 +117,12 @@ exports.handler = async (event, context) => {
     );
 
     // Format the response
+    const { entries: forecastEntries, usedTripDates } = selectForecastDays(
+      forecastResponse.data.list,
+      departureDate,
+      returnDate
+    );
+
     const weatherData = {
       location: {
         name: name,
@@ -97,21 +138,21 @@ exports.handler = async (event, context) => {
         icon: currentWeatherResponse.data.weather[0].icon,
         feelsLike: Math.round(currentWeatherResponse.data.main.feels_like)
       },
-      forecast: forecastResponse.data.list
-        .filter((item, index) => index % 8 === 0) // Get one forecast per day
-        .slice(0, 5)
-        .map(item => ({
-          date: new Date(item.dt * 1000).toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric' 
-          }),
-          temperature: Math.round(item.main.temp),
-          description: item.weather[0].description,
-          icon: item.weather[0].icon
-        })),
+      forecast: forecastEntries.map(item => ({
+        date: new Date(item.dt * 1000).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        }),
+        temperature: Math.round(item.main.temp),
+        description: item.weather[0].description,
+        icon: item.weather[0].icon
+      })),
       cached: false,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(departureDate && !usedTripDates && {
+        note: 'Trip dates are outside the 5-day forecast window; showing the current outlook instead.'
+      })
     };
 
     console.log('Weather data retrieved successfully');

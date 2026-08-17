@@ -97,8 +97,10 @@ exports.handler = async (event, context) => {
   }
 };
 
-function getFallbackRecommendations(destination, weather, tripType, duration, headers) {
-  const baseCategories = {
+// Shared by both the AI-enhanced and fallback paths so that weather- and
+// trip-type-aware items always apply, regardless of whether HuggingFace is available.
+function buildPackingCategories(weather, tripType) {
+  const categories = {
     documents: {
       name: "📄 Essential Documents",
       items: [
@@ -148,28 +150,32 @@ function getFallbackRecommendations(destination, weather, tripType, duration, he
   };
 
   // Add weather-specific items
-  if (weather?.current?.temperature) {
+  if (typeof weather?.current?.temperature === 'number') {
     const temp = weather.current.temperature;
     if (temp < 10) {
-      baseCategories.clothing.items.push({ name: "Warm Jacket", description: "For cold weather", essential: true });
-      baseCategories.clothing.items.push({ name: "Warm Hat", description: "Keep head warm", essential: false });
+      categories.clothing.items.push({ name: "Warm Jacket", description: "For cold weather", essential: true });
+      categories.clothing.items.push({ name: "Warm Hat", description: "Keep head warm", essential: false });
     } else if (temp > 25) {
-      baseCategories.clothing.items.push({ name: "Light Clothing", description: "For hot weather", essential: true });
-      baseCategories.clothing.items.push({ name: "Hat", description: "Sun protection", essential: false });
+      categories.clothing.items.push({ name: "Light Clothing", description: "For hot weather", essential: true });
+      categories.clothing.items.push({ name: "Hat", description: "Sun protection", essential: false });
     }
   }
 
-  // Add trip-specific items
-  if (tripType === 'business') {
-    baseCategories.clothing.items.push({ name: "Business Attire", description: "Professional clothing", essential: true });
-    baseCategories.electronics.items.push({ name: "Laptop", description: "For work", essential: true });
+  // Add trip-specific items (tripType comes from the UI as "Business", "Leisure", etc.)
+  if (typeof tripType === 'string' && tripType.toLowerCase() === 'business') {
+    categories.clothing.items.push({ name: "Business Attire", description: "Professional clothing", essential: true });
+    categories.electronics.items.push({ name: "Laptop", description: "For work", essential: true });
   }
 
+  return categories;
+}
+
+function getFallbackRecommendations(destination, weather, tripType, duration, headers) {
   const result = {
     destination: destination,
     tripType: tripType,
     duration: duration,
-    categories: baseCategories,
+    categories: buildPackingCategories(weather, tripType),
     aiGenerated: false,
     cached: false,
     timestamp: new Date().toISOString(),
@@ -184,55 +190,11 @@ function getFallbackRecommendations(destination, weather, tripType, duration, he
 }
 
 function enhanceWithStructuredData(destination, weather, tripType, duration, aiSuggestions) {
-  // This function would process the AI response and structure it
-  // For now, we'll return a structured format
-  const categories = {
-    documents: {
-      name: "📄 Essential Documents",
-      items: [
-        { name: "Passport", description: "Valid for at least 6 months", essential: true },
-        { name: "Travel Insurance", description: "Comprehensive coverage", essential: true },
-        { name: "Flight Tickets", description: "Print and digital copies", essential: true }
-      ]
-    },
-    clothing: {
-      name: "👕 Clothing & Accessories",
-      items: [
-        { name: "Weather-appropriate clothing", description: "Based on forecast", essential: true },
-        { name: "Comfortable shoes", description: "For walking", essential: true },
-        { name: "Underwear & socks", description: "Pack extras", essential: true }
-      ]
-    },
-    electronics: {
-      name: "🔌 Electronics & Gadgets",
-      items: [
-        { name: "Phone charger", description: "Essential", essential: true },
-        { name: "Camera", description: "Capture memories", essential: false },
-        { name: "Power adapter", description: "Universal recommended", essential: true }
-      ]
-    },
-    toiletries: {
-      name: "🧴 Toiletries & Health",
-      items: [
-        { name: "Toothbrush & toothpaste", description: "Essential hygiene", essential: true },
-        { name: "Medications", description: "Prescription & OTC", essential: true },
-        { name: "Sunscreen", description: "SPF 30+", essential: false }
-      ]
-    },
-    accessories: {
-      name: "🎒 Travel Accessories",
-      items: [
-        { name: "Travel pillow", description: "Comfortable flights", essential: false },
-        { name: "Umbrella", description: "Weather protection", essential: false }
-      ]
-    }
-  };
-
   return {
     destination: destination,
     tripType: tripType,
     duration: duration,
-    categories: categories,
+    categories: buildPackingCategories(weather, tripType),
     aiGenerated: true,
     aiSuggestions: aiSuggestions,
     cached: false,

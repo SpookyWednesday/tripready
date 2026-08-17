@@ -126,6 +126,7 @@ class TravelPackingApp {
         this.currentTrip = null;
         this.checklistData = {};
         this.checklistProgress = { packed: 0, total: 0 };
+        this.checkedItems = new Set();
         this.isGenerating = false;
         this.currentEditingTheme = null;
         this.savedCustomThemes = this.loadSavedCustomThemes();
@@ -229,7 +230,7 @@ class TravelPackingApp {
                     if (themeSelector) themeSelector.value = savedTheme;
                     if (customThemeSelector) customThemeSelector.selectedIndex = 0; // Reset to header
                     body.className = savedTheme;
-                    body.setAttribute('data-color-scheme', savedTheme.includes('dark') ? 'dark' : 'light');
+                    body.setAttribute('data-color-scheme', savedTheme === 'theme-light' ? 'light' : 'dark');
                 }
             }
         } catch (error) {
@@ -350,7 +351,7 @@ class TravelPackingApp {
                 // Clear custom theme classes
                 this.clearFontClasses(body);
                 body.className = themeName;
-                body.setAttribute('data-color-scheme', themeName.includes('dark') ? 'dark' : 'light');
+                body.setAttribute('data-color-scheme', themeName === 'theme-light' ? 'light' : 'dark');
                 localStorage.setItem('travel-app-theme', themeName);
                 localStorage.removeItem('active-custom-theme');
                 
@@ -629,6 +630,19 @@ class TravelPackingApp {
         }
     }
 
+    isLightBackground(backgroundStyle, customBackgroundColor = null) {
+        if (backgroundStyle === 'light') return true;
+        if (backgroundStyle === 'custom') {
+            const bgHex = (customBackgroundColor || '#0c1e2e').replace('#', '');
+            const bgR = parseInt(bgHex.substr(0, 2), 16);
+            const bgG = parseInt(bgHex.substr(2, 2), 16);
+            const bgB = parseInt(bgHex.substr(4, 2), 16);
+            const brightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
+            return brightness > 128;
+        }
+        return false; // 'blue' and 'dark' backgrounds are both dark
+    }
+
     generateThemeColors(accentColor, backgroundStyle, customBackgroundColor = null) {
         // Parse hex color to RGB
         const hex = accentColor.replace('#', '');
@@ -675,9 +689,8 @@ class TravelPackingApp {
                 const bgR = parseInt(bgHex.substr(0, 2), 16);
                 const bgG = parseInt(bgHex.substr(2, 2), 16);
                 const bgB = parseInt(bgHex.substr(4, 2), 16);
-                const brightness = (bgR * 299 + bgG * 587 + bgB * 114) / 1000;
-                const isLight = brightness > 128;
-                
+                const isLight = this.isLightBackground('custom', customBg);
+
                 // Generate surface colors based on background
                 const surfaceShift = isLight ? -20 : 20;
                 const elevatedShift = isLight ? -40 : 40;
@@ -959,7 +972,8 @@ class TravelPackingApp {
                 body.classList.add(`font-${themeData.fontStyle}`);
             }
             
-            body.setAttribute('data-color-scheme', themeData.backgroundStyle === 'light' ? 'light' : 'dark');
+            const isLight = this.isLightBackground(themeData.backgroundStyle, themeData.customBackgroundColor);
+            body.setAttribute('data-color-scheme', isLight ? 'light' : 'dark');
             localStorage.setItem('travel-app-theme', 'theme-custom');
             localStorage.setItem('active-custom-theme', themeName);
         }
@@ -1069,8 +1083,11 @@ class TravelPackingApp {
             if (savedProgress) {
                 this.checklistProgress = JSON.parse(savedProgress);
             }
+            const savedChecked = localStorage.getItem('travel-checklist-checked');
+            this.checkedItems = new Set(savedChecked ? JSON.parse(savedChecked) : []);
         } catch (error) {
             console.error('Error loading saved progress:', error);
+            this.checkedItems = new Set();
         }
     }
 
@@ -1116,16 +1133,20 @@ class TravelPackingApp {
             const duration = this.calculateDuration(tripData.departureDate, tripData.returnDate);
             console.log(`📅 Trip duration: ${duration} days`);
 
-            // Call APIs in parallel
-            console.log('🔄 Calling APIs in parallel...');
-            const [weatherData, visaData, recommendationsData] = await Promise.allSettled([
-                getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate),
-                getVisaData(tripData.nationality, tripData.destination),
-                getRecommendations(tripData.destination, null, tripData.tripType, duration)
+            // Call APIs. Recommendations need the resolved weather to tailor
+            // weather-specific items, so wait for weather before requesting them;
+            // visa keeps running concurrently the whole time.
+            console.log('🔄 Calling APIs...');
+            const weatherPromise = getWeatherData(tripData.destination, tripData.departureDate, tripData.returnDate);
+            const visaPromise = getVisaData(tripData.nationality, tripData.destination);
+
+            const weather = await weatherPromise;
+            const [visaData, recommendationsData] = await Promise.allSettled([
+                visaPromise,
+                getRecommendations(tripData.destination, weather, tripData.tripType, duration)
             ]);
 
             // Process results
-            const weather = weatherData.status === 'fulfilled' ? weatherData.value : null;
             const visa = visaData.status === 'fulfilled' ? visaData.value : null;
             const recommendations = recommendationsData.status === 'fulfilled' ? recommendationsData.value : null;
 
@@ -1335,6 +1356,30 @@ class TravelPackingApp {
         `;
     }
 
+    // Surfaces the raw AI-generated text (previously fetched and silently discarded)
+    // as a note above the checklist, instead of dropping it on the floor.
+    renderAiNote() {
+        const container = document.querySelector('.checklist-container');
+        if (!container) return;
+
+        let noteEl = container.querySelector('.checklist-ai-note');
+        const recommendations = this.currentTrip?.recommendations;
+        const suggestion = recommendations?.aiGenerated ? recommendations.aiSuggestions?.trim() : '';
+
+        if (suggestion) {
+            if (!noteEl) {
+                noteEl = document.createElement('p');
+                noteEl.className = 'checklist-ai-note';
+                const categoriesEl = container.querySelector('.checklist-categories');
+                container.insertBefore(noteEl, categoriesEl);
+            }
+            // textContent, not innerHTML: this is third-party AI output and must not be parsed as markup
+            noteEl.textContent = `🤖 AI notes: ${suggestion}`;
+        } else if (noteEl) {
+            noteEl.remove();
+        }
+    }
+
     updateChecklist() {
         const checklistCategories = document.querySelector('.checklist-categories');
         if (!checklistCategories) return;
@@ -1356,24 +1401,28 @@ class TravelPackingApp {
                         <span class="category-count">${itemsCount} items</span>
                     </div>
                     <div class="checklist-items">
-                        ${category.items.map(item => `
-                            <div class="checklist-item" data-category="${categoryKey}" data-item="${item.name}">
-                                <div class="item-checkbox" onclick="app.toggleItem('${categoryKey}', '${item.name}')"></div>
+                        ${category.items.map(item => {
+                            const isChecked = this.checkedItems.has(`${categoryKey}::${item.name}`);
+                            return `
+                            <div class="checklist-item${isChecked ? ' checked' : ''}" data-category="${categoryKey}" data-item="${item.name}">
+                                <div class="item-checkbox${isChecked ? ' checked' : ''}" onclick="app.toggleItem('${categoryKey}', '${item.name}')"></div>
                                 <div class="item-text">
                                     <div class="item-name">${item.name}</div>
                                     <div class="item-description">${item.description}</div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
             `;
         }
 
         checklistCategories.innerHTML = categoriesHTML;
+        this.renderAiNote();
 
-        // Update progress stats
-        this.updateProgressStats(totalItems, 0);
+        // Reflect any restored checked state in the progress stats/bar and persist it
+        this.updateProgress();
     }
 
     updateProgressStats(total, packed) {
@@ -1421,8 +1470,10 @@ class TravelPackingApp {
     }
 
     updateProgress() {
-        const totalItems = document.querySelectorAll('.checklist-item').length;
-        const packedItems = document.querySelectorAll('.checklist-item.checked').length;
+        const allItems = document.querySelectorAll('.checklist-item');
+        const checkedItemElements = document.querySelectorAll('.checklist-item.checked');
+        const totalItems = allItems.length;
+        const packedItems = checkedItemElements.length;
         const percentage = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0;
 
         // Update progress circle
@@ -1435,7 +1486,13 @@ class TravelPackingApp {
         // Update stats
         this.updateProgressStats(totalItems, packedItems);
 
-        // Save progress
+        // Save progress, including which specific items are checked so it
+        // survives regenerating the checklist (e.g. after a page reload)
+        this.checkedItems = new Set(
+            Array.from(checkedItemElements).map(el => `${el.dataset.category}::${el.dataset.item}`)
+        );
+        localStorage.setItem('travel-checklist-checked', JSON.stringify(Array.from(this.checkedItems)));
+
         this.checklistProgress = { packed: packedItems, total: totalItems };
         localStorage.setItem('travel-checklist-progress', JSON.stringify(this.checklistProgress));
     }
