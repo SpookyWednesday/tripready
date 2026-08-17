@@ -125,8 +125,6 @@ class TravelPackingApp {
     constructor() {
         this.currentTrip = null;
         this.checklistData = {};
-        this.checklistProgress = { packed: 0, total: 0 };
-        this.checkedItems = new Set();
         this.isGenerating = false;
         this.currentEditingTheme = null;
         this.savedCustomThemes = this.loadSavedCustomThemes();
@@ -207,7 +205,6 @@ class TravelPackingApp {
         this.populateDropdowns();
         this.populateCustomThemeSelector();
         this.setMinDates();
-        this.loadSavedProgress();
         console.log('✅ App initialized successfully');
     }
 
@@ -1077,20 +1074,6 @@ class TravelPackingApp {
         }
     }
 
-    loadSavedProgress() {
-        try {
-            const savedProgress = localStorage.getItem('travel-checklist-progress');
-            if (savedProgress) {
-                this.checklistProgress = JSON.parse(savedProgress);
-            }
-            const savedChecked = localStorage.getItem('travel-checklist-checked');
-            this.checkedItems = new Set(savedChecked ? JSON.parse(savedChecked) : []);
-        } catch (error) {
-            console.error('Error loading saved progress:', error);
-            this.checkedItems = new Set();
-        }
-    }
-
     async generateChecklist() {
         if (this.isGenerating) return;
 
@@ -1380,17 +1363,20 @@ class TravelPackingApp {
         }
     }
 
+    // Renders the packing list fresh every run: a plain, read-only, categorized
+    // bullet list (no checkboxes/tracking) driven entirely by destination + weather
+    // at the supplied dates via this.currentTrip.recommendations.categories.
     updateChecklist() {
         const checklistCategories = document.querySelector('.checklist-categories');
         if (!checklistCategories) return;
 
-        // Use AI recommendations if available, otherwise use default categories
+        // Use destination/weather-aware recommendations if available, otherwise the static defaults
         const categories = this.currentTrip.recommendations?.categories || this.packingCategories;
 
         let totalItems = 0;
         let categoriesHTML = '';
 
-        for (const [categoryKey, category] of Object.entries(categories)) {
+        for (const category of Object.values(categories)) {
             const itemsCount = category.items.length;
             totalItems += itemsCount;
 
@@ -1400,20 +1386,13 @@ class TravelPackingApp {
                         <h4 class="category-title">${category.name}</h4>
                         <span class="category-count">${itemsCount} items</span>
                     </div>
-                    <div class="checklist-items">
-                        ${category.items.map(item => {
-                            const isChecked = this.checkedItems.has(`${categoryKey}::${item.name}`);
-                            return `
-                            <div class="checklist-item${isChecked ? ' checked' : ''}" data-category="${categoryKey}" data-item="${item.name}">
-                                <div class="item-checkbox${isChecked ? ' checked' : ''}" onclick="app.toggleItem('${categoryKey}', '${item.name}')"></div>
-                                <div class="item-text">
-                                    <div class="item-name">${item.name}</div>
-                                    <div class="item-description">${item.description}</div>
-                                </div>
-                            </div>
-                        `;
-                        }).join('')}
-                    </div>
+                    <ul class="packing-list">
+                        ${category.items.map(item => `
+                            <li class="packing-item${item.essential ? ' essential' : ''}">
+                                <span class="item-name">${item.name}</span>${item.description ? ` <span class="item-description">— ${item.description}</span>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
                 </div>
             `;
         }
@@ -1421,80 +1400,8 @@ class TravelPackingApp {
         checklistCategories.innerHTML = categoriesHTML;
         this.renderAiNote();
 
-        // Reflect any restored checked state in the progress stats/bar and persist it
-        this.updateProgress();
-    }
-
-    updateProgressStats(total, packed) {
-        const totalItems = document.querySelector('.stat-number');
-        const packedItems = document.querySelectorAll('.stat-number')[1];
-        const remainingItems = document.querySelectorAll('.stat-number')[2];
-
-        if (totalItems) totalItems.textContent = total;
-        if (packedItems) packedItems.textContent = packed;
-        if (remainingItems) remainingItems.textContent = total - packed;
-    }
-
-    toggleItem(category, itemName) {
-        const itemElement = document.querySelector(`[data-category="${category}"][data-item="${itemName}"]`);
-        if (!itemElement) return;
-
-        const checkbox = itemElement.querySelector('.item-checkbox');
-        const isChecked = checkbox.classList.contains('checked');
-
-        if (isChecked) {
-            checkbox.classList.remove('checked');
-            itemElement.classList.remove('checked');
-        } else {
-            checkbox.classList.add('checked');
-            itemElement.classList.add('checked');
-        }
-
-        // Update progress
-        this.updateProgress();
-    }
-
-    toggleAllItems(checked) {
-        const items = document.querySelectorAll('.checklist-item');
-        items.forEach(item => {
-            const checkbox = item.querySelector('.item-checkbox');
-            if (checked) {
-                checkbox.classList.add('checked');
-                item.classList.add('checked');
-            } else {
-                checkbox.classList.remove('checked');
-                item.classList.remove('checked');
-            }
-        });
-        this.updateProgress();
-    }
-
-    updateProgress() {
-        const allItems = document.querySelectorAll('.checklist-item');
-        const checkedItemElements = document.querySelectorAll('.checklist-item.checked');
-        const totalItems = allItems.length;
-        const packedItems = checkedItemElements.length;
-        const percentage = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0;
-
-        // Update progress circle
-        const progressFill = document.querySelector('.progress-fill');
-        const progressPercentage = document.querySelector('.progress-percentage');
-
-        if (progressFill) progressFill.style.width = percentage + '%';
-        if (progressPercentage) progressPercentage.textContent = percentage + '%';
-
-        // Update stats
-        this.updateProgressStats(totalItems, packedItems);
-
-        // Save progress, including which specific items are checked so it
-        // survives regenerating the checklist (e.g. after a page reload)
-        this.checkedItems = new Set(
-            Array.from(checkedItemElements).map(el => `${el.dataset.category}::${el.dataset.item}`)
-        );
-        localStorage.setItem('travel-checklist-checked', JSON.stringify(Array.from(this.checkedItems)));
-
-        this.checklistProgress = { packed: packedItems, total: totalItems };
-        localStorage.setItem('travel-checklist-progress', JSON.stringify(this.checklistProgress));
+        const totalCountEl = document.querySelector('.checklist-total-count');
+        if (totalCountEl) totalCountEl.textContent = `${totalItems} items`;
     }
 
     showError(message) {
